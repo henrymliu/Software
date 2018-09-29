@@ -1,10 +1,10 @@
-#include "util/annunciator.h"
+#include "annunciator.h"
 #include <glibmm/main.h>
 #include <glibmm/spawn.h>
 #include <cassert>
 #include <iostream>
 #include <unordered_map>
-#include "util/misc.h"
+// #include "util/misc.h"
 
 namespace
 {

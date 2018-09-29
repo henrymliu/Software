@@ -24,9 +24,9 @@
 #include "geom/point.h"
 // #include "mrf/packet_logger.h"
 // #include "mrf/robot.h"
-#include "util/mrf/async_operation.h"
-#include "util/mrf/libusb.h"
-#include "util/mrf/annunciator.h"
+#include "async_operation.h"
+#include "libusb.h"
+#include "annunciator.h"
 
 #include "util/noncopyable.h"
 #include "util/property.h"

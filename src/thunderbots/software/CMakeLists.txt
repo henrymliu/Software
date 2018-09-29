@@ -9,6 +9,8 @@ endif()
 # For external editor code completion (Visual Studio Code, Vim, etc.)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Use PkgConfig to find some packages using pkg_check_modules
+find_package(PkgConfig REQUIRED)
 include(FindPkgConfig)
 
 ####################

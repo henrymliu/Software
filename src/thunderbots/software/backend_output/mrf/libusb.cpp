@@ -11,11 +11,15 @@
 #include <iostream>
 #include <limits>
 #include <string>
+#include <exception>
 //#include "util/dprint.h"
 // #include "util/exception.h"
 //#include "util/main_loop.h"
 
 #define STALL_RETRIES 3
+
+#define LOG_ERROR(x) std::cerr << x << std::endl;
+#define LOG_INFO(x) std::cout << x << std::endl;
 
 namespace
 {
@@ -81,7 +85,7 @@ long check_fn(const char *call, long err, unsigned int endpoint)
             break;
 
         default:
-            throw ErrorMessageError();
+            throw std::runtime_error("Error fetching error message");
     }
     std::string s;
     s.reserve(
@@ -782,7 +786,7 @@ void USB::Transfer::result() const
                 transfer->endpoint, u8"Device sent more data than requested");
 
         default:
-            throw ErrorMessageError();
+            throw std::runtime_error("Error fetching error message");
     }
 }
 

@@ -17,7 +17,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
-#include "util/mrf/constants.h"
+#include "constants.h"
 // #include "mrf/robot.h"
 // #include "util/dprint.h"
 
