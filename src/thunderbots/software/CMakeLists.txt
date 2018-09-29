@@ -9,6 +9,8 @@ endif()
 # For external editor code completion (Visual Studio Code, Vim, etc.)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+include(FindPkgConfig)
+
 ####################
 ## Compiler Flags ##
 ####################
@@ -129,11 +131,25 @@ add_executable (backend_output
         ${BACKEND_OUTPUT_SRC}
         ${SHARED_UTIL_SRC}
         )
+
+##### GLIB #####
+pkg_search_module("GLIBMM" REQUIRED "glibmm-2.4")
+include_directories(SYSTEM "${GLIBMM_INCLUDE_DIRS}")
+
+
+##### LIBUSB #####
+pkg_search_module("LIBUSB_1" REQUIRED "libusb-1.0")
+include_directories(SYSTEM "${LIBUSB_1_INCLUDE_DIRS}")
+link_directories("${LIBUSB_1_LIBRARY_DIRS}")
+add_definitions("${LIBUSB_1_DEFINITIONS}")
+
 # Depend on exported targets (other packages) so that the messages in our thunderbots_msgs package are built first.
 # This way the message headers are always generated before they are used in compilation here.
 add_dependencies(backend_output ${catkin_EXPORTED_TARGETS})
 target_link_libraries(backend_output ${catkin_LIBRARIES}
         ${PROTOBUF_LIBRARIES}
+        ${GLIB_LIBRARIES}
+        ${LIBUSB_1_LIBRARIES}
         )
 
 
