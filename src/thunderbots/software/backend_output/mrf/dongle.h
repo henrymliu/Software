@@ -27,6 +27,7 @@
 #include "async_operation.h"
 #include "libusb.h"
 #include "annunciator.h"
+#include "ai/primitive/primitive.h"
 
 #include "util/noncopyable.h"
 #include "util/property.h"
@@ -34,7 +35,7 @@
 /**
  * \brief The dongle.
  */
-class MRFDongle final : public NonCopyable
+class MRFDongle final
 {
    public:
     /**
@@ -170,6 +171,7 @@ class MRFDongle final : public NonCopyable
     void handle_status(AsyncOperation<void> &);
     void dirty_drive();
     bool submit_drive_transfer();
+    void encode_drive_packet(std::unique_ptr<Primitive> prim, void *out);
     void handle_drive_transfer_done(AsyncOperation<void> &);
     void handle_camera_transfer_done(
         AsyncOperation<void> &,

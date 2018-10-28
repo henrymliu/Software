@@ -8,6 +8,7 @@
 #include "ai/primitive/move_primitive.h"
 #include "ai/primitive/primitive.h"
 #include "backend_output/grsim/grsim_backend.h"
+#include "backend_output/mrf/mrf_backend.h"
 #include "geom/point.h"
 #include "util/constants.h"
 
@@ -45,8 +46,9 @@ int main(int argc, char** argv)
 
     // Initialize variables
     primitives           = std::vector<std::unique_ptr<Primitive>>();
-    GrSimBackend backend = GrSimBackend(NETWORK_ADDRESS, NETWORK_PORT);
-
+    // GrSimBackend backend = GrSimBackend(NETWORK_ADDRESS, NETWORK_PORT);
+    MRFDongle dongle = MRFDongle();
+    MrfBackend backend = MrfBackend(dongle);
     // We loop at 30Hz so we don't overload the network with too many packets
     ros::Rate tick_rate(TICK_RATE);
 

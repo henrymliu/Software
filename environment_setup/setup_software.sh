@@ -131,7 +131,7 @@ echo "================================================================"
 
 if [ "$ros_distro" == "kinetic" ]; then
     # See http://wiki.ros.org/kinetic/Installation/Ubuntu for instructions
-    sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+    sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu xenial main" > /etc/apt/sources.list.d/ros-latest.list'
     sudo apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-key 421C365BD9FF1F717815A3895523BAEEB01FA116
     sudo apt-get update
     sudo apt-get install ros-kinetic-desktop -y
@@ -144,7 +144,7 @@ if [ "$ros_distro" == "kinetic" ]; then
     sudo apt-get install python-rosinstall python-rosinstall-generator python-wstool build-essential
 elif [ "$ros_distro" == "melodic" ]; then
     # See http://wiki.ros.org/melodic/Installation/Ubuntu for instructions
-    sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+    sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu bionic main" > /etc/apt/sources.list.d/ros-latest.list'
     sudo apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-key 421C365BD9FF1F717815A3895523BAEEB01FA116
     sudo apt-get update
     sudo apt-get install ros-melodic-desktop -y

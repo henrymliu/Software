@@ -311,7 +311,7 @@ MRFDongle::MRFDongle()
     // Switch to normal mode.
     device.set_interface_alt_setting(radio_interface, normal_altsetting);
 
-    // Create the robots.
+    // Create the robots. TODO: something to do for the backend input
     for (unsigned int i = 0; i < 8; ++i)
     {
         //robots[i].reset(new MRFRobot(*this, i));
@@ -425,6 +425,7 @@ void MRFDongle::handle_mdrs(AsyncOperation<void> &op)
     mdr_transfer.submit();
 }
 
+// TODO: backend_input should handle this
 void MRFDongle::handle_message(
     AsyncOperation<void> &, USB::BulkInTransfer &transfer)
 {
@@ -573,63 +574,146 @@ void MRFDongle::send_camera_packet(
     // std::cout << "Submitted camera transfer in position:"<<
     // camera_transfers.size() << std::endl;
 }
+
 bool MRFDongle::submit_drive_transfer()
 {
+    // Change this to take in a vector of primitives instead.
+    // Replace robots array with array of bools? represents drive_dirty
+    //
     if (!drive_transfer)
     {
-        std::size_t dirty_indices[sizeof(robots) / sizeof(*robots)];
-        std::size_t dirty_indices_count = 0;
-        for (std::size_t i = 0; i != sizeof(robots) / sizeof(*robots); ++i)
-        {
-            if (robots[i]->drive_dirty)
-            {
-                dirty_indices[dirty_indices_count++] = i;
-                robots[i]->drive_dirty               = false;
-            }
-        }
-        if (dirty_indices_count)
-        {
-            std::size_t length;
-            if (dirty_indices_count == sizeof(robots) / sizeof(*robots))
-            {
-                // All robots are present. Build a full-size packet with all the
-                // robots’ data in index order.
-                for (std::size_t i = 0; i != sizeof(robots) / sizeof(*robots);
-                     ++i)
-                {
-                    robots[i]->encode_drive_packet(&drive_packet[i * 8]);
-                }
-                length = 64;
-            }
-            else
-            {
+        // std::size_t dirty_indices[sizeof(robots) / sizeof(*robots)];
+        // std::size_t dirty_indices_count = 0;
+        // for (std::size_t i = 0; i != sizeof(robots) / sizeof(*robots); ++i)
+        // {
+        //     if (robots[i]->drive_dirty)
+        //     {
+        //         dirty_indices[dirty_indices_count++] = i;
+        //         robots[i]->drive_dirty               = false;
+        //     }
+        // }
+        // More than 1 dirty index.
+        // if (dirty_indices_count)
+        // {
+            // std::size_t length;
+            // if (dirty_indices_count == sizeof(robots) / sizeof(*robots))
+            // {
+            //     // All robots are present. Build a full-size packet with all the
+            //     // robots’ data in index order.
+            //     for (std::size_t i = 0; i != sizeof(robots) / sizeof(*robots);
+            //          ++i)
+            //     {
+            //         robots[i]->encode_drive_packet(&drive_packet[i * 8]);
+            //     }
+            //     length = 64;
+            // }
+            // else
+            // {
                 // Only some robots are present. Build a reduced-size packet
                 // with
                 // robot indices prefixed.
-                length = 0;
-                for (std::size_t i = 0; i != dirty_indices_count; ++i)
-                {
-                    // std::cout << "encoding drive packet for bot: " <<
-                    // dirty_indices[i] << std::endl;
-                    drive_packet[length++] =
-                        static_cast<uint8_t>(dirty_indices[i]);
-                    robots[dirty_indices[i]]->encode_drive_packet(
-                        &drive_packet[length]);
-                    length += 8;
-                }
-            }
-            drive_transfer.reset(new USB::BulkOutTransfer(
-                device, 1, drive_packet, length, 64, 0));
-            drive_transfer->signal_done.connect(
-                sigc::mem_fun(this, &MRFDongle::handle_drive_transfer_done));
-            drive_transfer->submit();
+                // length = 0;
+                // for (std::size_t i = 0; i != dirty_indices_count; ++i)
+                // {
+                //     // std::cout << "encoding drive packet for bot: " <<
+                //     // dirty_indices[i] << std::endl;
+                //     drive_packet[length++] =
+                //         static_cast<uint8_t>(dirty_indices[i]);
+                //     robots[dirty_indices[i]]->encode_drive_packet(
+                //         &drive_packet[length]);
+                //     length += 8;
+                // }
+            // }
+            // drive_transfer.reset(new USB::BulkOutTransfer(
+            //     device, 1, drive_packet, length, 64, 0));
+            // drive_transfer->signal_done.connect(
+            //     sigc::mem_fun(this, &MRFDongle::handle_drive_transfer_done));
+            // drive_transfer->submit();
             // if (logger)
             // {
             //     logger->log_mrf_drive(drive_packet, length);
             // }
-        }
+        // }
     }
     return false;
+}
+
+void MRFDongle::encode_drive_packet(std::unique_ptr<Primitive> prim, void *out)
+{
+    uint16_t words[4];
+
+    // Encode the parameter words.
+    for (std::size_t i = 0; i < prim->getParameterArray().size(); ++i)
+    {
+        double value = prim->getParameterArray()[i];
+        switch (std::fpclassify(value))
+        {
+            case FP_NAN:
+                value = 0.0;
+                break;
+            case FP_INFINITE:
+                if (value > 0.0)
+                {
+                    value = 10000.0;
+                }
+                else
+                {
+                    value = -10000.0;
+                }
+                break;
+        }
+        words[i] = 0;
+        if (value < 0.0)
+        {
+            words[i] |= 1 << 10;
+            value = -value;
+        }
+        if (value > 1000.0)
+        {
+            words[i] |= 1 << 11;
+            value *= 0.1;
+        }
+        if (value > 1000.0)
+        {
+            value = 1000.0;
+        }
+        words[i] |= static_cast<uint16_t>(value);
+    }
+
+    // Encode the movement primitive number.
+    // words[0] = static_cast<uint16_t>(
+    //     words[0] | static_cast<unsigned int>(primitive.get()) << 12);
+
+    // Encode the charger state.
+    // switch (charger_state)
+    // {
+    //     case ChargerState::DISCHARGE:
+    //         words[1] |= 1 << 14;
+    //         break;
+    //     case ChargerState::FLOAT:
+    //         break;
+    //     case ChargerState::CHARGE:
+    //         words[1] |= 2 << 14;
+    //         break;
+    // }
+	words[1] |= 2 << 14; // WARNING THIS IS ALWAYS CHARGED
+
+    // // Encode extra data plus the slow flag.
+    // assert(extra <= 127);
+    // uint8_t extra_encoded = static_cast<uint8_t>(extra | (slow ? 0x80 : 0x00));
+
+    // words[2] = static_cast<uint16_t>(
+    //     words[2] | static_cast<uint16_t>((extra_encoded & 0xF) << 12));
+    // words[3] = static_cast<uint16_t>(
+    //     words[3] | static_cast<uint16_t>((extra_encoded >> 4) << 12));
+
+    // Convert the words to bytes.
+    uint8_t *wptr = static_cast<uint8_t *>(out);
+    for (std::size_t i = 0; i != 4; ++i)
+    {
+        *wptr++ = static_cast<uint8_t>(words[i]);
+        *wptr++ = static_cast<uint8_t>(words[i] / 256);
+    }
 }
 
 void MRFDongle::handle_drive_transfer_done(AsyncOperation<void> &op)
@@ -637,14 +721,15 @@ void MRFDongle::handle_drive_transfer_done(AsyncOperation<void> &op)
     // std::cout << "Drive Transfer done" << std::endl;
     op.result();
     drive_transfer.reset();
-    if (std::find_if(
-            robots, robots + sizeof(robots) / sizeof(*robots),
-            [](const std::unique_ptr<MRFRobot> &bot) {
-                return bot->drive_dirty;
-            }) != robots + sizeof(robots) / sizeof(*robots))
-    {
-        submit_drive_transfer();
-    }
+    // ???
+    // if (std::find_if(
+    //         robots, robots + sizeof(robots) / sizeof(*robots),
+    //         [](const std::unique_ptr<MRFRobot> &bot) {
+    //             return bot->drive_dirty;
+    //         }) != robots + sizeof(robots) / sizeof(*robots))
+    // {
+    //     submit_drive_transfer();
+    // }
 }
 
 void MRFDongle::handle_camera_transfer_done(

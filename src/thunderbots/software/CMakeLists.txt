@@ -137,6 +137,7 @@ add_executable (backend_output
 ##### GLIB #####
 pkg_search_module("GLIBMM" REQUIRED "glibmm-2.4")
 include_directories(SYSTEM "${GLIBMM_INCLUDE_DIRS}")
+link_directories("${GLIBMM_LIBRARY_DIRS}")
 
 
 ##### LIBUSB #####
@@ -145,13 +146,20 @@ include_directories(SYSTEM "${LIBUSB_1_INCLUDE_DIRS}")
 link_directories("${LIBUSB_1_LIBRARY_DIRS}")
 add_definitions("${LIBUSB_1_DEFINITIONS}")
 
+##### SIGC++  ######
+pkg_search_module("SIGC" REQUIRED "sigc++-2.0")
+include_directories(SYSTEM "${SIGC_INCLUDE_DIRS}")
+link_directories("${SIGC_LIBRARY_DIRS}")
+
 # Depend on exported targets (other packages) so that the messages in our thunderbots_msgs package are built first.
 # This way the message headers are always generated before they are used in compilation here.
 add_dependencies(backend_output ${catkin_EXPORTED_TARGETS})
+message(STATUS ${SIGC_LIBRARIES})	
 target_link_libraries(backend_output ${catkin_LIBRARIES}
         ${PROTOBUF_LIBRARIES}
-        ${GLIB_LIBRARIES}
+	${GLIBMM_LIBRARIES}
         ${LIBUSB_1_LIBRARIES}
+	${SIGC_LIBRARIES}
         )
 
 
