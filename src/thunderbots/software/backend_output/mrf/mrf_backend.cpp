@@ -12,10 +12,6 @@ MrfBackend::~MrfBackend()
 void MrfBackend::sendPrimitives(
         const std::vector<std::unique_ptr<Primitive>> &primitives)
 {
-	// for (auto p : primitives)
-	{
-	    // Encode each primitive and submit transfer through the dongle.
-		// dongle->
-	}
+	dongle.build_drive_packet(primitives);
 }
 

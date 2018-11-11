@@ -31,6 +31,11 @@ unsigned int MovePrimitive::getRobotId() const
     return robot_id;
 }
 
+PrimitiveType MovePrimitive::getPrimitiveType() const
+{
+    return PrimitiveType::MOVE;
+}
+
 std::vector<double> MovePrimitive::getParameterArray() const
 {
     std::vector<double> parameters = {dest.x(), dest.y(), final_angle.toRadians(),

@@ -347,12 +347,12 @@ MRFDongle::MRFDongle()
     status_transfer.submit();
 
     // // Connect signals to beep the dongle when an annunciator message occurs.
-    // annunciator_beep_connections[0] =
-    //     Annunciator::signal_message_activated.connect(sigc::mem_fun(
-    //         this, &MRFDongle::handle_annunciator_message_activated));
-    // annunciator_beep_connections[1] =
-    //     Annunciator::signal_message_reactivated.connect(sigc::mem_fun(
-    //         this, &MRFDongle::handle_annunciator_message_reactivated));
+    annunciator_beep_connections[0] =
+        Annunciator::signal_message_activated.connect(sigc::mem_fun(
+            this, &MRFDongle::handle_annunciator_message_activated));
+    annunciator_beep_connections[1] =
+        Annunciator::signal_message_reactivated.connect(sigc::mem_fun(
+            this, &MRFDongle::handle_annunciator_message_reactivated));
 }
 
 MRFDongle::~MRFDongle()
@@ -379,6 +379,7 @@ void MRFDongle::beep(unsigned int length)
         beep_transfer->signal_done.connect(
             sigc::mem_fun(this, &MRFDongle::handle_beep_done));
         beep_transfer->submit();
+        std::cout << "Beep submitted" << std::endl;
         pending_beep_length = 0;
     }
 }
@@ -463,18 +464,6 @@ void MRFDongle::handle_status(AsyncOperation<void> &)
     status_transfer.submit();
 }
 
-void MRFDongle::dirty_drive()
-{
-    if (!drive_submit_connection.connected())
-    {
-        // Tells the Glib control loop to send a drive transfer when it has
-        // nothing else to do (only once though)
-        // This should ensure the AI tick function completes before it sends a
-        // drive packet
-        drive_submit_connection = Glib::signal_idle().connect(
-            sigc::mem_fun(this, &MRFDongle::submit_drive_transfer));
-    }
-}
 
 void MRFDongle::send_camera_packet(
     std::vector<std::tuple<uint8_t, Point, Angle>> detbots, Point ball,
@@ -573,72 +562,74 @@ void MRFDongle::send_camera_packet(
 
     // std::cout << "Submitted camera transfer in position:"<<
     // camera_transfers.size() << std::endl;
+};
+
+void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>>& prims)
+{
+    if (!drive_submit_connection.connected())
+    {
+        // Tells the Glib control loop to send a drive transfer when it has
+        // nothing else to do (only once though)
+        // This should ensure the AI tick function completes before it sends a
+        // drive packet
+        drive_submit_connection = Glib::signal_idle().connect(
+            sigc::mem_fun(this, &MRFDongle::submit_drive_transfer));
+    }
+
+    std::size_t num_prims = prims.size();
+    
+    // More than 1 prim.
+    if (num_prims)
+    {
+        if (num_prims == MAX_ROBOT_ID-1)
+        {
+            // All robots are present. Build a full-size packet with all the
+            // robots’ data in index order.
+            for (std::size_t i = 0; i != num_prims; ++i)
+            {
+                encode_primitive(prims[i], &drive_packet[i * 8]);
+            }
+            drive_packet_length = 64;
+        }
+        else
+        {
+            // Only some robots are present. Build a reduced-size packet
+            // with robot indices prefixed.
+            drive_packet_length = 0;
+            for (std::size_t i = 0; i != num_prims; ++i)
+            {
+                // std::cout << "encoding drive packet for bot: " << prims[i]->getRobotId() << std::endl;
+                drive_packet[drive_packet_length++] = static_cast<uint8_t>(prims[i]->getRobotId());
+                encode_primitive(prims[i], &drive_packet[drive_packet_length]);
+                drive_packet_length += 8;
+            }
+        }
+
+        submit_drive_transfer();
+    }
 }
 
 bool MRFDongle::submit_drive_transfer()
 {
-    // Change this to take in a vector of primitives instead.
-    // Replace robots array with array of bools? represents drive_dirty
-    //
+    // Submit drive_packet when possible.
     if (!drive_transfer)
     {
-        // std::size_t dirty_indices[sizeof(robots) / sizeof(*robots)];
-        // std::size_t dirty_indices_count = 0;
-        // for (std::size_t i = 0; i != sizeof(robots) / sizeof(*robots); ++i)
+        beep(ANNUNCIATOR_BEEP_LENGTH);
+        drive_transfer.reset(new USB::BulkOutTransfer(
+            device, 1, drive_packet, drive_packet_length, 64, 0));
+        drive_transfer->signal_done.connect(
+            sigc::mem_fun(this, &MRFDongle::handle_drive_transfer_done));
+        drive_transfer->submit();
+        std::cout << "Drive transfer of length " << drive_packet_length << " submitted" << std::endl;
+        // if (logger)
         // {
-        //     if (robots[i]->drive_dirty)
-        //     {
-        //         dirty_indices[dirty_indices_count++] = i;
-        //         robots[i]->drive_dirty               = false;
-        //     }
-        // }
-        // More than 1 dirty index.
-        // if (dirty_indices_count)
-        // {
-            // std::size_t length;
-            // if (dirty_indices_count == sizeof(robots) / sizeof(*robots))
-            // {
-            //     // All robots are present. Build a full-size packet with all the
-            //     // robots’ data in index order.
-            //     for (std::size_t i = 0; i != sizeof(robots) / sizeof(*robots);
-            //          ++i)
-            //     {
-            //         robots[i]->encode_drive_packet(&drive_packet[i * 8]);
-            //     }
-            //     length = 64;
-            // }
-            // else
-            // {
-                // Only some robots are present. Build a reduced-size packet
-                // with
-                // robot indices prefixed.
-                // length = 0;
-                // for (std::size_t i = 0; i != dirty_indices_count; ++i)
-                // {
-                //     // std::cout << "encoding drive packet for bot: " <<
-                //     // dirty_indices[i] << std::endl;
-                //     drive_packet[length++] =
-                //         static_cast<uint8_t>(dirty_indices[i]);
-                //     robots[dirty_indices[i]]->encode_drive_packet(
-                //         &drive_packet[length]);
-                //     length += 8;
-                // }
-            // }
-            // drive_transfer.reset(new USB::BulkOutTransfer(
-            //     device, 1, drive_packet, length, 64, 0));
-            // drive_transfer->signal_done.connect(
-            //     sigc::mem_fun(this, &MRFDongle::handle_drive_transfer_done));
-            // drive_transfer->submit();
-            // if (logger)
-            // {
-            //     logger->log_mrf_drive(drive_packet, length);
-            // }
+        //     logger->log_mrf_drive(drive_packet, length);
         // }
     }
     return false;
 }
 
-void MRFDongle::encode_drive_packet(std::unique_ptr<Primitive> prim, void *out)
+void MRFDongle::encode_primitive(const std::unique_ptr<Primitive>& prim, void *out)
 {
     uint16_t words[4];
 
@@ -681,8 +672,8 @@ void MRFDongle::encode_drive_packet(std::unique_ptr<Primitive> prim, void *out)
     }
 
     // Encode the movement primitive number.
-    // words[0] = static_cast<uint16_t>(
-    //     words[0] | static_cast<unsigned int>(primitive.get()) << 12);
+    words[0] = static_cast<uint16_t>(
+        words[0] | static_cast<unsigned int>(prim->getPrimitiveType()) << 12);
 
     // Encode the charger state.
     // switch (charger_state)
@@ -698,7 +689,9 @@ void MRFDongle::encode_drive_packet(std::unique_ptr<Primitive> prim, void *out)
     // }
 	words[1] |= 2 << 14; // WARNING THIS IS ALWAYS CHARGED
 
-    // // Encode extra data plus the slow flag.
+    // Encode extra data plus the slow flag.
+    // TODO convert boolean array to int here
+
     // assert(extra <= 127);
     // uint8_t extra_encoded = static_cast<uint8_t>(extra | (slow ? 0x80 : 0x00));
 
@@ -718,7 +711,7 @@ void MRFDongle::encode_drive_packet(std::unique_ptr<Primitive> prim, void *out)
 
 void MRFDongle::handle_drive_transfer_done(AsyncOperation<void> &op)
 {
-    // std::cout << "Drive Transfer done" << std::endl;
+    std::cout << "Drive Transfer done" << std::endl;
     op.result();
     drive_transfer.reset();
     // ???
@@ -752,6 +745,7 @@ void MRFDongle::handle_camera_transfer_done(
     (*iter).first->result();
     camera_transfers.erase(iter);
 }
+
 void MRFDongle::send_unreliable(
     unsigned int robot, unsigned int tries, const void *data, std::size_t len)
 {
@@ -782,8 +776,10 @@ void MRFDongle::check_unreliable_transfer(
     (*iter)->result();
     unreliable_messages.erase(iter);
 }
+
 void MRFDongle::handle_beep_done(AsyncOperation<void> &)
 {
+    std::cout << "beep done" << std::endl;
     beep_transfer->result();
     beep_transfer.reset();
     beep(0);

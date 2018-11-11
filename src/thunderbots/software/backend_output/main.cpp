@@ -58,6 +58,8 @@ int main(int argc, char** argv)
         // Clear all primitives each tick
         primitives.clear();
 
+        primitives.emplace_back(std::make_unique<MovePrimitive>(2, Point(2,2), Angle::ofDegrees(270), 3));
+
         // Spin once to let all necessary callbacks run
         // The callbacks will populate the primitives vector
         ros::spinOnce();

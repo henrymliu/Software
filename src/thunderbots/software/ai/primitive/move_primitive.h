@@ -32,6 +32,8 @@ class MovePrimitive : public Primitive
 
     unsigned int getRobotId() const override;
 
+    PrimitiveType getPrimitiveType() const override;
+
     std::vector<double> getParameterArray() const override;
 
     std::vector<bool> getExtraBitArray() const override;

@@ -12,6 +12,9 @@ const double ROBOT_MAX_RADIUS = 0.09;
 // The approximate radius of the ball according to the SSL rulebook
 const double BALL_MAX_RADIUS = 0.0215;
 
+// The maximum robot ID of our robots.
+const unsigned MAX_ROBOT_ID = 8;
+
 /* Robot Attributes */
 // The maximum speed achievable by our robots, in metres per second.
 // TODO: Determine a more realistic value

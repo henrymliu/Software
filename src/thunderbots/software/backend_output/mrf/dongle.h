@@ -22,6 +22,7 @@
 //#include "drive/dongle.h"
 #include "geom/angle.h"
 #include "geom/point.h"
+#include "shared/constants.h"
 // #include "mrf/packet_logger.h"
 // #include "mrf/robot.h"
 #include "async_operation.h"
@@ -129,6 +130,8 @@ class MRFDongle final
      */
     // void log_to(MRFPacketLogger &logger);
 
+    void build_drive_packet(const std::vector<std::unique_ptr<Primitive>>& prims);
+
     void send_camera_packet(
         std::vector<std::tuple<uint8_t, Point, Angle>> robots, Point ball,
         uint64_t timestamp);
@@ -157,6 +160,8 @@ class MRFDongle final
         camera_transfers;
     // std::unique_ptr<MRFRobot> robots[8];
     uint8_t drive_packet[64];
+    std::size_t drive_packet_length;
+
     sigc::connection drive_submit_connection;
     std::queue<uint8_t> free_message_ids;
     sigc::signal<void, uint8_t, uint8_t> signal_message_delivery_report;
@@ -169,9 +174,9 @@ class MRFDongle final
     void handle_mdrs(AsyncOperation<void> &);
     void handle_message(AsyncOperation<void> &, USB::BulkInTransfer &transfer);
     void handle_status(AsyncOperation<void> &);
-    void dirty_drive();
+
     bool submit_drive_transfer();
-    void encode_drive_packet(std::unique_ptr<Primitive> prim, void *out);
+    void encode_primitive(const std::unique_ptr<Primitive>& prim, void *out);
     void handle_drive_transfer_done(AsyncOperation<void> &);
     void handle_camera_transfer_done(
         AsyncOperation<void> &,
