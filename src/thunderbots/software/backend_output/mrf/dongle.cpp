@@ -324,14 +324,16 @@ MRFDongle::MRFDongle()
     }
 
     // Submit the message delivery report transfers.
+    
     for (auto &i : mdr_transfers)
     {
         i.reset(new USB::BulkInTransfer(device, 1, 8, false, 0));
         i->signal_done.connect(sigc::mem_fun(this, &MRFDongle::handle_mdrs));
         i->submit();
-    }
+    } 
 
     // Submit the received message transfers.
+    
     for (auto &i : message_transfers)
     {
         i.reset(new USB::BulkInTransfer(device, 2, 105, false, 0));
@@ -342,11 +344,12 @@ MRFDongle::MRFDongle()
     }
 
     // Submit the estop transfer.
+    
     status_transfer.signal_done.connect(
         sigc::mem_fun(this, &MRFDongle::handle_status));
     status_transfer.submit();
-
-    // // Connect signals to beep the dongle when an annunciator message occurs.
+    
+    // Connect signals to beep the dongle when an annunciator message occurs.
     annunciator_beep_connections[0] =
         Annunciator::signal_message_activated.connect(sigc::mem_fun(
             this, &MRFDongle::handle_annunciator_message_activated));
@@ -604,8 +607,6 @@ void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>>
                 drive_packet_length += 8;
             }
         }
-
-        submit_drive_transfer();
     }
 }
 
@@ -614,7 +615,6 @@ bool MRFDongle::submit_drive_transfer()
     // Submit drive_packet when possible.
     if (!drive_transfer)
     {
-        beep(ANNUNCIATOR_BEEP_LENGTH);
         drive_transfer.reset(new USB::BulkOutTransfer(
             device, 1, drive_packet, drive_packet_length, 64, 0));
         drive_transfer->signal_done.connect(
@@ -675,7 +675,7 @@ void MRFDongle::encode_primitive(const std::unique_ptr<Primitive>& prim, void *o
     words[0] = static_cast<uint16_t>(
         words[0] | static_cast<unsigned int>(prim->getPrimitiveType()) << 12);
 
-    // Encode the charger state.
+    // Encode the charger state. TODO add this
     // switch (charger_state)
     // {
     //     case ChargerState::DISCHARGE:
@@ -687,18 +687,23 @@ void MRFDongle::encode_primitive(const std::unique_ptr<Primitive>& prim, void *o
     //         words[1] |= 2 << 14;
     //         break;
     // }
-	words[1] |= 2 << 14; // WARNING THIS IS ALWAYS CHARGED
+	words[1] |= 1 << 14; // Discharged for now
 
     // Encode extra data plus the slow flag.
     // TODO convert boolean array to int here
 
     // assert(extra <= 127);
     // uint8_t extra_encoded = static_cast<uint8_t>(extra | (slow ? 0x80 : 0x00));
-
-    // words[2] = static_cast<uint16_t>(
-    //     words[2] | static_cast<uint16_t>((extra_encoded & 0xF) << 12));
-    // words[3] = static_cast<uint16_t>(
-    //     words[3] | static_cast<uint16_t>((extra_encoded >> 4) << 12));
+    uint8_t extra_encoded = 0;
+    // for (int i = 0; i < 8; ++i)
+    // {
+    //     extra_encoded |= prim->getExtraBitArray()[i] << i;
+    // }
+    //printf("Extra encoded: %u\n", extra_encoded);
+    words[2] = static_cast<uint16_t>(
+        words[2] | static_cast<uint16_t>((extra_encoded & 0xF) << 12));
+    words[3] = static_cast<uint16_t>(
+        words[3] | static_cast<uint16_t>((extra_encoded >> 4) << 12));
 
     // Convert the words to bytes.
     uint8_t *wptr = static_cast<uint8_t *>(out);
@@ -711,7 +716,7 @@ void MRFDongle::encode_primitive(const std::unique_ptr<Primitive>& prim, void *o
 
 void MRFDongle::handle_drive_transfer_done(AsyncOperation<void> &op)
 {
-    std::cout << "Drive Transfer done" << std::endl;
+    // std::cout << "Drive Transfer done" << std::endl;
     op.result();
     drive_transfer.reset();
     // ???
@@ -779,7 +784,7 @@ void MRFDongle::check_unreliable_transfer(
 
 void MRFDongle::handle_beep_done(AsyncOperation<void> &)
 {
-    std::cout << "beep done" << std::endl;
+    // std::cout << "beep done" << std::endl;
     beep_transfer->result();
     beep_transfer.reset();
     beep(0);

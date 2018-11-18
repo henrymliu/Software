@@ -183,6 +183,7 @@ void USB::usb_transfer_handle_completed_transfer_trampoline(
         --md->device().submitted_transfer_count;
         if (md->transfer())
         {
+            //printf("Before handle_completed_transfer\n");
             md->transfer()->handle_completed_transfer();
         }
         else
@@ -191,21 +192,21 @@ void USB::usb_transfer_handle_completed_transfer_trampoline(
             // transfer was submitted at the time.
             // The disowned libusb_transfer needs to be allowed to finish
             // cancelling before being freed.
+            printf("Transfer object destroyed\n");
             delete md;
             delete[] transfer->buffer;
             libusb_free_transfer(transfer);
         }
     }
-    catch (...)
+    catch (std::exception& e)
     {
         // libusb is C code, so exception cannot safely propagate through it
         // doing a normal stack unwind.
         // Save the exception in the main loop and do a normal return, which
         // will let libusb unwind itself properly before the exception continues
         // unwinding.
-        ///MainLoop::quit_with_current_exception();
-        std::cerr << "Something went wrong with libusb" << std::endl;
-        abort();
+        std::cerr << "Something went wrong with libusb: " << e.what() << std::endl;
+        throw;
     }
 }
 

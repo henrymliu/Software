@@ -46,5 +46,5 @@ std::vector<double> MovePrimitive::getParameterArray() const
 
 std::vector<bool> MovePrimitive::getExtraBitArray() const
 {
-    return std::vector<bool>();
+    return std::vector<bool>(false);
 }
