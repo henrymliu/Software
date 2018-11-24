@@ -18,8 +18,6 @@
 #include <string>
 #include <unordered_map>
 #include "constants.h"
-// #include "mrf/robot.h"
-// #include "util/dprint.h"
 
 namespace
 {
@@ -143,19 +141,6 @@ MRFDongle::MRFDongle()
       configuration_altsetting(-1),
       normal_altsetting(-1),
       status_transfer(device, 3, 1, true, 0),
-      rx_fcs_fail_message(
-          u8"Dongle receive FCS fail", Annunciator::Message::TriggerMode::EDGE,
-          Annunciator::Message::Severity::HIGH),
-      second_dongle_message(
-          u8"Second dongle on this channel+PAN",
-          Annunciator::Message::TriggerMode::LEVEL,
-          Annunciator::Message::Severity::HIGH),
-      transmit_queue_full_message(
-          u8"Transmit Queue Full", Annunciator::Message::TriggerMode::LEVEL,
-          Annunciator::Message::Severity::HIGH),
-      receive_queue_full_message(
-          u8"Receive Queue Full", Annunciator::Message::TriggerMode::LEVEL,
-          Annunciator::Message::Severity::HIGH),
       pending_beep_length(0),
       estop_state(EStopState::STOP)
 {
@@ -324,7 +309,6 @@ MRFDongle::MRFDongle()
     }
 
     // Submit the message delivery report transfers.
-    
     for (auto &i : mdr_transfers)
     {
         i.reset(new USB::BulkInTransfer(device, 1, 8, false, 0));
@@ -333,7 +317,6 @@ MRFDongle::MRFDongle()
     } 
 
     // Submit the received message transfers.
-    
     for (auto &i : message_transfers)
     {
         i.reset(new USB::BulkInTransfer(device, 2, 105, false, 0));
@@ -344,26 +327,14 @@ MRFDongle::MRFDongle()
     }
 
     // Submit the estop transfer.
-    
     status_transfer.signal_done.connect(
         sigc::mem_fun(this, &MRFDongle::handle_status));
     status_transfer.submit();
-    
-    // Connect signals to beep the dongle when an annunciator message occurs.
-    annunciator_beep_connections[0] =
-        Annunciator::signal_message_activated.connect(sigc::mem_fun(
-            this, &MRFDongle::handle_annunciator_message_activated));
-    annunciator_beep_connections[1] =
-        Annunciator::signal_message_reactivated.connect(sigc::mem_fun(
-            this, &MRFDongle::handle_annunciator_message_reactivated));
+
 }
 
 MRFDongle::~MRFDongle()
 {
-    // Disconnect signals.
-    annunciator_beep_connections[0].disconnect();
-    annunciator_beep_connections[1].disconnect();
-    drive_submit_connection.disconnect();
 
     // Mark USB device as shutting down to squelch cancelled transfer warnings.
     device.mark_shutting_down();
@@ -456,13 +427,13 @@ void MRFDongle::handle_status(AsyncOperation<void> &)
 {
     status_transfer.result();
     estop_state = static_cast<EStopState>(status_transfer.data()[0] & 3U);
-    if (status_transfer.data()[0U] & 4U)
-    {
-        rx_fcs_fail_message.fire();
-    }
-    second_dongle_message.active(status_transfer.data()[0] & 8U);
-    transmit_queue_full_message.active(status_transfer.data()[0] & 16U);
-    receive_queue_full_message.active(status_transfer.data()[0] & 32U);
+    // if (status_transfer.data()[0U] & 4U)
+    // {
+    //     rx_fcs_fail_message.fire();
+    // }
+    // second_dongle_message.active(status_transfer.data()[0] & 8U);
+    // transmit_queue_full_message.active(status_transfer.data()[0] & 16U);
+    // receive_queue_full_message.active(status_transfer.data()[0] & 32U);
 
     status_transfer.submit();
 }
@@ -719,7 +690,7 @@ void MRFDongle::handle_drive_transfer_done(AsyncOperation<void> &op)
     // std::cout << "Drive Transfer done" << std::endl;
     op.result();
     drive_transfer.reset();
-    // ???
+    
     // if (std::find_if(
     //         robots, robots + sizeof(robots) / sizeof(*robots),
     //         [](const std::unique_ptr<MRFRobot> &bot) {
@@ -784,26 +755,7 @@ void MRFDongle::check_unreliable_transfer(
 
 void MRFDongle::handle_beep_done(AsyncOperation<void> &)
 {
-    // std::cout << "beep done" << std::endl;
     beep_transfer->result();
     beep_transfer.reset();
     beep(0);
-}
-
-void MRFDongle::handle_annunciator_message_activated()
-{
-    const Annunciator::Message *msg = Annunciator::visible().back();
-    if (msg->severity == Annunciator::Message::Severity::HIGH)
-    {
-        beep(ANNUNCIATOR_BEEP_LENGTH);
-    }
-}
-
-void MRFDongle::handle_annunciator_message_reactivated(std::size_t index)
-{
-    const Annunciator::Message *msg = Annunciator::visible()[index];
-    if (msg->severity == Annunciator::Message::Severity::HIGH)
-    {
-        beep(ANNUNCIATOR_BEEP_LENGTH);
-    }
 }
