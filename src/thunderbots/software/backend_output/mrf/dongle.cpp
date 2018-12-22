@@ -18,8 +18,6 @@
 #include <string>
 #include <unordered_map>
 #include "constants.h"
-// #include "mrf/robot.h"
-// #include "util/dprint.h"
 
 namespace
 {
@@ -358,6 +356,11 @@ MRFDongle::MRFDongle()
             this, &MRFDongle::handle_annunciator_message_reactivated));
 }
 
+void MRFDongle::handle_libusb_events()
+{
+    context.handle_usb_fds();
+}
+
 MRFDongle::~MRFDongle()
 {
     // Disconnect signals.
@@ -569,6 +572,7 @@ void MRFDongle::send_camera_packet(
 
 void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>>& prims)
 {
+    /*
     if (!drive_submit_connection.connected())
     {
         // Tells the Glib control loop to send a drive transfer when it has
@@ -577,7 +581,7 @@ void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>>
         // drive packet
         drive_submit_connection = Glib::signal_idle().connect(
             sigc::mem_fun(this, &MRFDongle::submit_drive_transfer));
-    }
+    }*/
 
     std::size_t num_prims = prims.size();
     
@@ -607,6 +611,7 @@ void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>>
                 drive_packet_length += 8;
             }
         }
+        submit_drive_transfer();
     }
 }
 
@@ -716,7 +721,7 @@ void MRFDongle::encode_primitive(const std::unique_ptr<Primitive>& prim, void *o
 
 void MRFDongle::handle_drive_transfer_done(AsyncOperation<void> &op)
 {
-    // std::cout << "Drive Transfer done" << std::endl;
+    std::cout << "Drive Transfer done" << std::endl;
     op.result();
     drive_transfer.reset();
     // ???

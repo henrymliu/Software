@@ -139,11 +139,6 @@ pkg_search_module("GLIBMM" REQUIRED "glibmm-2.4")
 include_directories(SYSTEM "${GLIBMM_INCLUDE_DIRS}")
 link_directories("${GLIBMM_LIBRARY_DIRS}")
 
-##### GTK ######
-pkg_check_modules("GTKMM" REQUIRED "gtkmm-3.0")
-# include the GTK dependencies
-include_directories(SYSTEM "${GTKMM_INCLUDE_DIRS}")
-link_directories("${GTKMM_LIBRARY_DIRS}")
 
 ##### LIBUSB #####
 pkg_search_module("LIBUSB_1" REQUIRED "libusb-1.0")

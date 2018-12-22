@@ -19,12 +19,9 @@
 #include <tuple>
 #include <utility>
 #include <vector>
-//#include "drive/dongle.h"
 #include "geom/angle.h"
 #include "geom/point.h"
 #include "shared/constants.h"
-// #include "mrf/packet_logger.h"
-// #include "mrf/robot.h"
 #include "async_operation.h"
 #include "libusb.h"
 #include "annunciator.h"
@@ -95,6 +92,11 @@ class MRFDongle final
      * \brief Returns the PAN ID on which the dongle is communicating.
      */
     uint16_t pan() const;
+
+    /**
+     * Handles libusb callbacks.
+     */
+    void handle_libusb_events();
 
     /**
      * \brief The possible positions of the hardware run switch

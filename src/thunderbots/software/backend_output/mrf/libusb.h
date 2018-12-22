@@ -119,6 +119,8 @@ class Context final : public NonCopyable
      */
     explicit Context();
 
+    void handle_usb_fds();
+
     /**
      * \brief Deinitializes the library and destroys the context.
      *
@@ -139,7 +141,6 @@ class Context final : public NonCopyable
 
     void add_pollfd(int fd, short events);
     void remove_pollfd(int fd);
-    void handle_usb_fds();
 };
 
 /**

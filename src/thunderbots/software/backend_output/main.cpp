@@ -2,7 +2,6 @@
 #include <ros/time.h>
 #include <thunderbots_msgs/Primitive.h>
 #include <thunderbots_msgs/PrimitiveArray.h>
-#include <gtkmm/main.h>
 
 #include <iostream>
 #include <thread>
@@ -43,9 +42,6 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "backend_output");
     ros::NodeHandle node_handle;
 
-    // Hack: need to make this a GTK app to get the libusb signal stuff working :(
-    Gtk::Main app(argc, argv);
-
     // Create subscribers to topics we care about
     ros::Subscriber prim_array_sub = node_handle.subscribe(
         UTIL::CONSTANTS::AI_PRIMITIVES_TOPIC, 1, primitiveUpdateCallback);
@@ -57,16 +53,13 @@ int main(int argc, char** argv)
     MrfBackend backend = MrfBackend(dongle);
     // We loop at 30Hz so we don't overload the network with too many packets
     ros::Rate tick_rate(TICK_RATE);
-    
-    // Let the GTK main loop run in its own thread.
-    std::thread t{[&app]{app.run();}};
 
     // Main loop
     while (ros::ok())
     {
         // Clear all primitives each tick
         primitives.clear();
-        primitives.emplace_back(std::make_unique<MovePrimitive>(6, 
+        primitives.emplace_back(std::make_unique<MovePrimitive>(1, 
             Point(std::rand()%4, std::rand()%4), Angle::ofDegrees(std::rand()%360), 3));
 
         // Spin once to let all necessary callbacks run
@@ -75,9 +68,12 @@ int main(int argc, char** argv)
 
         backend.sendPrimitives(primitives);
 
+        // Handle libusb events for the dongle
+        dongle.handle_libusb_events();
+
+
         tick_rate.sleep();
     }
-    t.join();
 
     return 0;
 }
