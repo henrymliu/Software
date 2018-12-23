@@ -1,7 +1,7 @@
 #include "mrf_backend.h"
 #include <chrono>
 
-MrfBackend::MrfBackend(MRFDongle& dongle) : dongle(dongle)
+MrfBackend::MrfBackend(MRFDongle& dongle) : dongle(dongle), ball(Ball(Point(0,0), Vector(0,0)))
 {
 
 }

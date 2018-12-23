@@ -70,11 +70,11 @@ int main(int argc, char** argv)
 
     // Create subscribers to topics we care about
     ros::Subscriber prim_array_sub = node_handle.subscribe(
-        UTIL::CONSTANTS::AI_PRIMITIVES_TOPIC, 1, primitiveUpdateCallback);
+        Util::Constants::AI_PRIMITIVES_TOPIC, 1, primitiveUpdateCallback);
     ros::Subscriber friendly_team_sub = node_handle.subscribe(
-        UTIL::CONSTANTS::BACKEND_INPUT_FRIENDLY_TEAM_TOPIC, 1, friendlyTeamUpdateCallback);
+        Util::Constants::BACKEND_INPUT_FRIENDLY_TEAM_TOPIC, 1, friendlyTeamUpdateCallback);
     ros::Subscriber ball_sub = node_handle.subscribe(
-        UTIL::CONSTANTS::BACKEND_INPUT_BALL_TOPIC, 1, ballUpdateCallback);
+        Util::Constants::BACKEND_INPUT_BALL_TOPIC, 1, ballUpdateCallback);
 
     // Initialize variables
     primitives           = std::vector<std::unique_ptr<Primitive>>();
