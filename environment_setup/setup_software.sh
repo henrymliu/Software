@@ -19,6 +19,7 @@
 # user decide which one to install.
 
 ros_distro="kinetic"
+ubuntu_distro="xenial"
 
 function show_help()
 {
@@ -49,9 +50,11 @@ while [ "$1" != "" ]; do
             ;;
         kinetic)
             ros_distro="kinetic"
+	    ubuntu_distro="xenial"
             ;;
         melodic)
             ros_distro="melodic"
+	    ubuntu_distro="bionic"
             ;;
         *)
             echo "ERROR: unknown parameter \"$PARAM\""
@@ -173,7 +176,7 @@ fi
 
 rosdep update
 # Install all required dependencies to build this repo
-rosdep install --from-paths $CURR_DIR/../src --ignore-src --rosdistro $ros_distro -y 
+rosdep install --from-paths $CURR_DIR/../src --ignore-src --rosdistro $ros_distro -y --os=ubuntu:$ubuntu_distro
 if [ $? -ne 0 ]; then
     echo "##############################################################"
     echo "Error: Installing ROS dependencies failed"
@@ -197,7 +200,6 @@ sudo apt-get update
 host_software_packages=(
     g++-7 # We need g++ 7 or greater to support the C++17 standard
     python-rosinstall
-    clang-format
     protobuf-compiler
     libprotobuf-dev
 )
