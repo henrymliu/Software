@@ -566,8 +566,8 @@ void MRFDongle::send_camera_packet(
         sigc::mem_fun(this, &MRFDongle::handle_camera_transfer_done), i));
     (*i).first->submit();
 
-    // std::cout << "Submitted camera transfer in position:"<<
-    // camera_transfers.size() << std::endl;
+    std::cout << "Submitted camera transfer in position:"<<
+        camera_transfers.size() << std::endl;
 };
 
 void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>>& prims)

@@ -163,17 +163,6 @@ class TransferMetadata final : public NonCopyable
 };
 }
 
-void USB::usb_context_pollfd_add_trampoline(
-    int fd, short events, void *user_data)
-{
-    static_cast<Context *>(user_data)->add_pollfd(fd, events);
-}
-
-void USB::usb_context_pollfd_remove_trampoline(int fd, void *user_data)
-{
-    static_cast<Context *>(user_data)->remove_pollfd(fd);
-}
-
 void USB::usb_transfer_handle_completed_transfer_trampoline(
     libusb_transfer *transfer)
 {
@@ -237,61 +226,12 @@ USB::TransferCancelledError::TransferCancelledError(unsigned int endpoint)
 USB::Context::Context()
 {
     check_fn("libusb_init", libusb_init(&context), 0);
-    const libusb_pollfd **pfds = libusb_get_pollfds(context);
-    if (!pfds)
-    {
-        check_fn("libusb_get_pollfds", LIBUSB_ERROR_OTHER, 0);
-    }
-    for (const libusb_pollfd **i = pfds; *i; ++i)
-    {
-        add_pollfd((*i)->fd, (*i)->events);
-    }
-    std::free(pfds);
-    libusb_set_pollfd_notifiers(
-        context, &usb_context_pollfd_add_trampoline,
-        &usb_context_pollfd_remove_trampoline, this);
 }
 
 USB::Context::~Context()
 {
     libusb_exit(context);
     context = nullptr;
-    for (auto &i : fd_connections)
-    {
-        i.second.disconnect();
-    }
-}
-
-void USB::Context::add_pollfd(int fd, short events)
-{
-    auto old = fd_connections.find(fd);
-    if (old != fd_connections.end())
-    {
-        old->second.disconnect();
-    }
-    Glib::IOCondition cond = static_cast<Glib::IOCondition>(0);
-    if (events & POLLIN)
-    {
-        cond |= Glib::IO_IN;
-    }
-    if (events & POLLOUT)
-    {
-        cond |= Glib::IO_OUT;
-    }
-    fd_connections[fd] = Glib::signal_io().connect(
-        sigc::bind_return(
-            sigc::hide(sigc::mem_fun(this, &Context::handle_usb_fds)), true),
-        fd, cond);
-}
-
-void USB::Context::remove_pollfd(int fd)
-{
-    auto i = fd_connections.find(fd);
-    if (i != fd_connections.end())
-    {
-        i->second.disconnect();
-        fd_connections.erase(i);
-    }
 }
 
 void USB::Context::handle_usb_fds()

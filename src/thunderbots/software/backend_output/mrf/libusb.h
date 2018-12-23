@@ -132,15 +132,8 @@ class Context final : public NonCopyable
    private:
     friend class DeviceList;
     friend class DeviceHandle;
-    friend void usb_context_pollfd_add_trampoline(
-        int fd, short events, void *user_data);
-    friend void usb_context_pollfd_remove_trampoline(int fd, void *user_data);
 
     libusb_context *context;
-    std::unordered_map<int, sigc::connection> fd_connections;
-
-    void add_pollfd(int fd, short events);
-    void remove_pollfd(int fd);
 };
 
 /**
