@@ -46,6 +46,12 @@ void ballUpdateCallback(const thunderbots_msgs::Ball::ConstPtr &msg)
     thunderbots_msgs::Ball ball_msg = *msg;
 
     Ball ball = Util::ROSMessages::createBallFromROSMessage(ball_msg);
+    backend.update_ball(ball);
+
+    // Send vision packet
+    // TODO test this; I have a feeling that it may be
+    // better to have a combined ball + team callback
+    backend.send_vision_packet();
 }
 
 void friendlyTeamUpdateCallback(const thunderbots_msgs::Team::ConstPtr &msg)
@@ -60,6 +66,9 @@ void friendlyTeamUpdateCallback(const thunderbots_msgs::Team::ConstPtr &msg)
         detbots.push_back(std::make_tuple(r.id(), r.position(), r.orientation()));
     }
     backend.update_detbots(detbots);
+
+    // Send vision packet
+    backend.send_vision_packet();
 }
 
 int main(int argc, char** argv)
@@ -93,9 +102,6 @@ int main(int argc, char** argv)
 
         // Send primitives
         backend.sendPrimitives(primitives);
-
-        // Send vision packet
-        backend.send_vision_packet();
 
         // Handle libusb events for the dongle
         dongle.handle_libusb_events();
