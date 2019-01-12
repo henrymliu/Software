@@ -10,8 +10,7 @@
 enum class PrimitiveType
 {
     /**
-     * \brief Implements the \ref Drive::Robot::move_coast and \ref
-     * Drive::Robot::move_brake primitives.
+     * These represent the IDs of the primitives implemented in firmware.
      *
      * The parameters are unused.
      *
@@ -117,6 +116,13 @@ class Primitive
     virtual std::string getPrimitiveName() const = 0;
 
     /**
+     * Returns the enum corresponding to the primitive type.
+     * 
+     * @return the primitive type
+     */
+    virtual PrimitiveType getPrimitiveType() const = 0;
+
+    /**
      * Returns the ID of the robot that this Primitive corresponds
      * to / is controlling
      *
@@ -125,28 +131,21 @@ class Primitive
     virtual unsigned int getRobotId() const = 0;
 
     /**
-     * Returns the enum corresponding to the primitive type.
-     * 
-     * @return the primitive type
-     */
-    virtual PrimitiveType getPrimitiveType() const = 0;
-
-    /**
-     * Returns the generic array of parameters for this Primitive
+     * Returns the generic vector of parameters for this Primitive
      *
      * @return A vector of doubles that are the generic parameters for this Primitive
      */
-    virtual std::vector<double> getParameterArray() const = 0;
+    virtual std::vector<double> getParameters() const = 0;
 
     /**
-     * Returns the generic array of Booleans, that represent the extra bits used by
+     * Returns the generic vector of Booleans, that represent the extra bits used by
      * the Primitive. These extra bits are typically used to toggle behaviour of the
      * Primitive, such as if the kicker or chipper should be used, or if autokick
      * should be enabled.
      *
      * @return A vector of Booleans that are the extra bits used by the Primitive.
      */
-    virtual std::vector<bool> getExtraBitArray() const = 0;
+    virtual std::vector<bool> getExtraBits() const = 0;
 
     /**
      * Validates that a primitive message is compatible with the primitive
