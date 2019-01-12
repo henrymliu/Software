@@ -71,8 +71,6 @@ class MovePrimitive : public Primitive
      */
     double getFinalSpeed() const;
 
-    PrimitiveType getPrimitiveType() const override;
-
     /**
      * Returns the generic vector of parameters for this Primitive
      *

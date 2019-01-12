@@ -612,9 +612,9 @@ void MRFDongle::encode_primitive(const std::unique_ptr<Primitive>& prim, void *o
     uint16_t words[4];
 
     // Encode the parameter words.
-    for (std::size_t i = 0; i < prim->getParameterArray().size(); ++i)
+    for (std::size_t i = 0; i < prim->getParameters().size(); ++i)
     {
-        double value = prim->getParameterArray()[i];
+        double value = prim->getParameters()[i];
         switch (std::fpclassify(value))
         {
             case FP_NAN:

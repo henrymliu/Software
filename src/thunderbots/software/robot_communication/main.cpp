@@ -88,9 +88,9 @@ int main(int argc, char** argv)
     ros::Subscriber prim_array_sub = node_handle.subscribe(
         Util::Constants::AI_PRIMITIVES_TOPIC, 1, primitiveUpdateCallback);
     ros::Subscriber friendly_team_sub = node_handle.subscribe(
-        Util::Constants::BACKEND_INPUT_FRIENDLY_TEAM_TOPIC, 1, friendlyTeamUpdateCallback);
+        Util::Constants::NETWORK_INPUT_FRIENDLY_TEAM_TOPIC, 1, friendlyTeamUpdateCallback);
     ros::Subscriber ball_sub = node_handle.subscribe(
-        Util::Constants::BACKEND_INPUT_BALL_TOPIC, 1, ballUpdateCallback);
+        Util::Constants::NETWORK_INPUT_BALL_TOPIC, 1, ballUpdateCallback);
 
     // Initialize the logger
     Util::Logger::LoggerSingleton::initializeLogger();
