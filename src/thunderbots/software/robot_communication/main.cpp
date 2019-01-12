@@ -97,6 +97,12 @@ int main(int argc, char** argv)
 
     // Initialize variables
     primitives = std::vector<std::unique_ptr<Primitive>>();
+    primitives.emplace_back(
+            std::make_unique<MovePrimitive>(2, Point(1, 0),
+                                            Angle::ofDegrees(200), 3));
+    primitives.emplace_back(
+        std::make_unique<MovePrimitive>(7, Point(0, 1),
+                                        Angle::ofDegrees(30), 3)); 
     // GrSimBackend backend = GrSimBackend(NETWORK_ADDRESS, NETWORK_PORT);
 
     // We loop at a set rate so that we don't overload the network with too many packets
@@ -106,11 +112,8 @@ int main(int argc, char** argv)
     while (ros::ok())
     {
         // Clear all primitives each tick
-        primitives.clear();
-        primitives.emplace_back(
-            std::make_unique<MovePrimitive>(1, Point(std::rand() % 4, std::rand() % 4),
-                                            Angle::ofDegrees(std::rand() % 360), 3));
-
+        // primitives.clear();
+                                          
         // Send primitives
         backend.sendPrimitives(primitives);
 
