@@ -1,17 +1,19 @@
 #include "libusb.h"
+
 #include <glibmm/convert.h>
 #include <glibmm/main.h>
 #include <glibmm/ustring.h>
 #include <poll.h>
+
 #include <algorithm>
 #include <cassert>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
+#include <exception>
 #include <iostream>
 #include <limits>
 #include <string>
-#include <exception>
 //#include "util/dprint.h"
 // #include "util/exception.h"
 //#include "util/main_loop.h"
@@ -23,148 +25,144 @@
 
 namespace
 {
-long check_fn(const char *call, long err, unsigned int endpoint)
-{
-    if (err >= 0)
+    long check_fn(const char *call, long err, unsigned int endpoint)
     {
-        return err;
+        if (err >= 0)
+        {
+            return err;
+        }
+
+        const char *msg;
+        const char *detail = nullptr;
+        switch (err)
+        {
+            case LIBUSB_ERROR_IO:
+                msg    = "Input/output error";
+                detail = std::strerror(errno);
+                break;
+
+            case LIBUSB_ERROR_INVALID_PARAM:
+                msg = "Invalid parameter";
+                break;
+
+            case LIBUSB_ERROR_ACCESS:
+                msg = "Access denied (insufficient permissions)";
+                break;
+
+            case LIBUSB_ERROR_NO_DEVICE:
+                msg = "No such device (it may have been disconnected)";
+                break;
+
+            case LIBUSB_ERROR_NOT_FOUND:
+                msg = "Entity not found";
+                break;
+
+            case LIBUSB_ERROR_BUSY:
+                msg = "Resource busy";
+                break;
+
+            case LIBUSB_ERROR_TIMEOUT:
+                throw USB::TransferTimeoutError(endpoint);
+
+            case LIBUSB_ERROR_OVERFLOW:
+                msg = "Overflow";
+                break;
+
+            case LIBUSB_ERROR_PIPE:
+                throw USB::TransferStallError(endpoint);
+
+            case LIBUSB_ERROR_INTERRUPTED:
+                msg = "System call interrupted (perhaps due to signal)";
+                break;
+
+            case LIBUSB_ERROR_NO_MEM:
+                throw std::bad_alloc();
+
+            case LIBUSB_ERROR_NOT_SUPPORTED:
+                msg = "Operation not supported or unimplemented on this platform";
+                break;
+
+            case LIBUSB_ERROR_OTHER:
+                msg = "Other error";
+                break;
+
+            default:
+                throw std::runtime_error("Error fetching error message");
+        }
+        std::string s;
+        s.reserve(std::strlen(call) + 2 + std::strlen(msg) +
+                  (detail ? (3 + std::strlen(detail)) : 0));
+        s.append(call);
+        s.append(": ");
+        s.append(msg);
+        if (detail)
+        {
+            s.append(" (");
+            s.append(detail);
+            s.append(")");
+        }
+        throw USB::Error(s);
     }
 
-    const char *msg;
-    const char *detail = nullptr;
-    switch (err)
+    std::string make_transfer_error_message(unsigned int endpoint,
+                                            const char *msg /* UTF8 */)
     {
-        case LIBUSB_ERROR_IO:
-            msg    = "Input/output error";
-            detail = std::strerror(errno);
-            break;
-
-        case LIBUSB_ERROR_INVALID_PARAM:
-            msg = "Invalid parameter";
-            break;
-
-        case LIBUSB_ERROR_ACCESS:
-            msg = "Access denied (insufficient permissions)";
-            break;
-
-        case LIBUSB_ERROR_NO_DEVICE:
-            msg = "No such device (it may have been disconnected)";
-            break;
-
-        case LIBUSB_ERROR_NOT_FOUND:
-            msg = "Entity not found";
-            break;
-
-        case LIBUSB_ERROR_BUSY:
-            msg = "Resource busy";
-            break;
-
-        case LIBUSB_ERROR_TIMEOUT:
-            throw USB::TransferTimeoutError(endpoint);
-
-        case LIBUSB_ERROR_OVERFLOW:
-            msg = "Overflow";
-            break;
-
-        case LIBUSB_ERROR_PIPE:
-            throw USB::TransferStallError(endpoint);
-
-        case LIBUSB_ERROR_INTERRUPTED:
-            msg = "System call interrupted (perhaps due to signal)";
-            break;
-
-        case LIBUSB_ERROR_NO_MEM:
-            throw std::bad_alloc();
-
-        case LIBUSB_ERROR_NOT_SUPPORTED:
-            msg = "Operation not supported or unimplemented on this platform";
-            break;
-
-        case LIBUSB_ERROR_OTHER:
-            msg = "Other error";
-            break;
-
-        default:
-            throw std::runtime_error("Error fetching error message");
-    }
-    std::string s;
-    s.reserve(
-        std::strlen(call) + 2 + std::strlen(msg) +
-        (detail ? (3 + std::strlen(detail)) : 0));
-    s.append(call);
-    s.append(": ");
-    s.append(msg);
-    if (detail)
-    {
-        s.append(" (");
-        s.append(detail);
-        s.append(")");
-    }
-    throw USB::Error(s);
-}
-
-std::string make_transfer_error_message(
-    unsigned int endpoint, const char *msg /* UTF8 */)
-{
-    return Glib::locale_from_utf8(Glib::ustring::compose(
-        u8"%1 on %2 endpoint %3", msg, (endpoint & 0x80) ? u8"IN" : u8"OUT",
-        endpoint & 0x7F));
-}
-
-bool matches_vid_pid_serial(
-    const USB::Device &device, unsigned int vendor_id, unsigned int product_id,
-    const char *serial_number)
-{
-    if (device.vendor_id() != vendor_id || device.product_id() != product_id)
-    {
-        return false;
+        return Glib::locale_from_utf8(Glib::ustring::compose(
+            u8"%1 on %2 endpoint %3", msg, (endpoint & 0x80) ? u8"IN" : u8"OUT",
+            endpoint & 0x7F));
     }
 
-    if (!serial_number)
+    bool matches_vid_pid_serial(const USB::Device &device, unsigned int vendor_id,
+                                unsigned int product_id, const char *serial_number)
     {
-        return true;
+        if (device.vendor_id() != vendor_id || device.product_id() != product_id)
+        {
+            return false;
+        }
+
+        if (!serial_number)
+        {
+            return true;
+        }
+
+        return device.serial_number() == serial_number;
     }
 
-    return device.serial_number() == serial_number;
-}
-
-class TransferMetadata final : public NonCopyable
-{
-   public:
-    static TransferMetadata *get(libusb_transfer *transfer)
+    class TransferMetadata final : public NonCopyable
     {
-        return static_cast<TransferMetadata *>(transfer->user_data);
-    }
+       public:
+        static TransferMetadata *get(libusb_transfer *transfer)
+        {
+            return static_cast<TransferMetadata *>(transfer->user_data);
+        }
 
-    explicit TransferMetadata(
-        USB::Transfer &transfer, USB::DeviceHandle &device)
-        : transfer_(&transfer), device_(device)
-    {
-    }
+        explicit TransferMetadata(USB::Transfer &transfer, USB::DeviceHandle &device)
+            : transfer_(&transfer), device_(device)
+        {
+        }
 
-    USB::Transfer *transfer() const
-    {
-        return transfer_;
-    }
+        USB::Transfer *transfer() const
+        {
+            return transfer_;
+        }
 
-    USB::DeviceHandle &device() const
-    {
-        return device_;
-    }
+        USB::DeviceHandle &device() const
+        {
+            return device_;
+        }
 
-    void disown()
-    {
-        transfer_ = nullptr;
-    }
+        void disown()
+        {
+            transfer_ = nullptr;
+        }
 
-   private:
-    USB::Transfer *transfer_;
-    USB::DeviceHandle &device_;
-};
-}
+       private:
+        USB::Transfer *transfer_;
+        USB::DeviceHandle &device_;
+    };
+}  // namespace
 
-void USB::usb_transfer_handle_completed_transfer_trampoline(
-    libusb_transfer *transfer)
+void USB::usb_transfer_handle_completed_transfer_trampoline(libusb_transfer *transfer)
 {
     try
     {
@@ -172,7 +170,7 @@ void USB::usb_transfer_handle_completed_transfer_trampoline(
         --md->device().submitted_transfer_count;
         if (md->transfer())
         {
-            //printf("Before handle_completed_transfer\n");
+            // printf("Before handle_completed_transfer\n");
             md->transfer()->handle_completed_transfer();
         }
         else
@@ -187,7 +185,7 @@ void USB::usb_transfer_handle_completed_transfer_trampoline(
             libusb_free_transfer(transfer);
         }
     }
-    catch (std::exception& e)
+    catch (std::exception &e)
     {
         // libusb is C code, so exception cannot safely propagate through it
         // doing a normal stack unwind.
@@ -199,9 +197,7 @@ void USB::usb_transfer_handle_completed_transfer_trampoline(
     }
 }
 
-USB::Error::Error(const std::string &msg) : std::runtime_error(msg)
-{
-}
+USB::Error::Error(const std::string &msg) : std::runtime_error(msg) {}
 
 USB::TransferError::TransferError(unsigned int endpoint, const char *msg)
     : Error(make_transfer_error_message(endpoint, msg))
@@ -237,17 +233,14 @@ USB::Context::~Context()
 void USB::Context::handle_usb_fds()
 {
     timeval tv = {0, 0};
-    check_fn(
-        "libusb_handle_events_timeout",
-        libusb_handle_events_timeout(context, &tv), 0);
+    check_fn("libusb_handle_events_timeout", libusb_handle_events_timeout(context, &tv),
+             0);
 }
 
-USB::Device::Device(const Device &copyref)
-    : device(libusb_ref_device(copyref.device))
+USB::Device::Device(const Device &copyref) : device(libusb_ref_device(copyref.device))
 {
-    check_fn(
-        "libusb_get_device_descriptor",
-        libusb_get_device_descriptor(device, &device_descriptor), 0);
+    check_fn("libusb_get_device_descriptor",
+             libusb_get_device_descriptor(device, &device_descriptor), 0);
 }
 
 USB::Device::~Device()
@@ -267,9 +260,8 @@ USB::Device &USB::Device::operator=(const Device &assgref)
 
 USB::Device::Device(libusb_device *device) : device(libusb_ref_device(device))
 {
-    check_fn(
-        "libusb_get_device_descriptor",
-        libusb_get_device_descriptor(device, &device_descriptor), 0);
+    check_fn("libusb_get_device_descriptor",
+             libusb_get_device_descriptor(device, &device_descriptor), 0);
 }
 
 std::string USB::Device::serial_number() const
@@ -290,9 +282,8 @@ std::string USB::Device::serial_number() const
 USB::DeviceList::DeviceList(Context &context)
 {
     ssize_t ssz;
-    check_fn(
-        "libusb_get_device_list",
-        ssz = libusb_get_device_list(context.context, &devices), 0);
+    check_fn("libusb_get_device_list",
+             ssz = libusb_get_device_list(context.context, &devices), 0);
     size_ = static_cast<std::size_t>(ssz);
 }
 
@@ -314,28 +305,22 @@ USB::DeviceHandle::DeviceHandle(const Device &device)
     init_descriptors();
 }
 
-USB::DeviceHandle::DeviceHandle(
-    Context &context, unsigned int vendor_id, unsigned int product_id,
-    const char *serial_number)
-    : context(context.context),
-      submitted_transfer_count(0),
-      shutting_down(false)
+USB::DeviceHandle::DeviceHandle(Context &context, unsigned int vendor_id,
+                                unsigned int product_id, const char *serial_number)
+    : context(context.context), submitted_transfer_count(0), shutting_down(false)
 {
     DeviceList lst(context);
     for (std::size_t i = 0; i < lst.size(); ++i)
     {
         const Device &device = lst[i];
-        if (matches_vid_pid_serial(
-                device, vendor_id, product_id, serial_number))
+        if (matches_vid_pid_serial(device, vendor_id, product_id, serial_number))
         {
             for (std::size_t j = i + 1; j < lst.size(); ++j)
             {
                 const Device &device = lst[j];
-                if (matches_vid_pid_serial(
-                        device, vendor_id, product_id, serial_number))
+                if (matches_vid_pid_serial(device, vendor_id, product_id, serial_number))
                 {
-                    throw std::runtime_error(
-                        "Multiple matching USB devices attached");
+                    throw std::runtime_error("Multiple matching USB devices attached");
                 }
             }
 
@@ -386,8 +371,8 @@ const libusb_config_descriptor &USB::DeviceHandle::configuration_descriptor(
     return *config_descriptors[index];
 }
 
-const libusb_config_descriptor &
-USB::DeviceHandle::configuration_descriptor_by_value(uint8_t value) const
+const libusb_config_descriptor &USB::DeviceHandle::configuration_descriptor_by_value(
+    uint8_t value) const
 {
     for (const auto &i : config_descriptors)
     {
@@ -406,8 +391,8 @@ std::string USB::DeviceHandle::string_descriptor(uint8_t index) const
     do
     {
         buf.resize(buf.size() * 2);
-        rc = libusb_get_string_descriptor_ascii(
-            handle, index, &buf[0], static_cast<int>(buf.size()));
+        rc = libusb_get_string_descriptor_ascii(handle, index, &buf[0],
+                                                static_cast<int>(buf.size()));
     } while (rc >= static_cast<int>(buf.size()) - 1);
     check_fn("libusb_get_string_descriptor_ascii", rc, 0);
     return std::string(buf.begin(), buf.begin() + rc);
@@ -416,152 +401,128 @@ std::string USB::DeviceHandle::string_descriptor(uint8_t index) const
 int USB::DeviceHandle::get_configuration() const
 {
     int conf;
-    check_fn(
-        "libusb_get_configuration", libusb_get_configuration(handle, &conf), 0);
+    check_fn("libusb_get_configuration", libusb_get_configuration(handle, &conf), 0);
     return conf;
 }
 
 void USB::DeviceHandle::set_configuration(int config)
 {
-    check_fn(
-        "libusb_set_configuration", libusb_set_configuration(handle, config),
-        0);
+    check_fn("libusb_set_configuration", libusb_set_configuration(handle, config), 0);
 }
 
 void USB::DeviceHandle::claim_interface(int interface)
 {
-    check_fn(
-        "libusb_claim_interface", libusb_claim_interface(handle, interface), 0);
+    check_fn("libusb_claim_interface", libusb_claim_interface(handle, interface), 0);
 }
 
 void USB::DeviceHandle::release_interface(int interface)
 {
-    check_fn(
-        "libusb_release_interface", libusb_release_interface(handle, interface),
-        0);
+    check_fn("libusb_release_interface", libusb_release_interface(handle, interface), 0);
 }
 
-void USB::DeviceHandle::set_interface_alt_setting(
-    int interface, int alternate_setting)
+void USB::DeviceHandle::set_interface_alt_setting(int interface, int alternate_setting)
 {
-    check_fn(
-        "libusb_set_interface_alt_setting",
-        libusb_set_interface_alt_setting(handle, interface, alternate_setting),
-        0);
+    check_fn("libusb_set_interface_alt_setting",
+             libusb_set_interface_alt_setting(handle, interface, alternate_setting), 0);
 }
 
 void USB::DeviceHandle::clear_halt_in(unsigned char endpoint)
 {
-    check_fn(
-        "libusb_clear_halt",
-        libusb_clear_halt(handle, endpoint | LIBUSB_ENDPOINT_IN),
-        endpoint | LIBUSB_ENDPOINT_IN);
+    check_fn("libusb_clear_halt",
+             libusb_clear_halt(handle, endpoint | LIBUSB_ENDPOINT_IN),
+             endpoint | LIBUSB_ENDPOINT_IN);
 }
 
 void USB::DeviceHandle::clear_halt_out(unsigned char endpoint)
 {
-    check_fn(
-        "libusb_clear_halt",
-        libusb_clear_halt(handle, endpoint | LIBUSB_ENDPOINT_OUT),
-        endpoint | LIBUSB_ENDPOINT_OUT);
+    check_fn("libusb_clear_halt",
+             libusb_clear_halt(handle, endpoint | LIBUSB_ENDPOINT_OUT),
+             endpoint | LIBUSB_ENDPOINT_OUT);
 }
 
-void USB::DeviceHandle::control_no_data(
-    uint8_t request_type, uint8_t request, uint16_t value, uint16_t index,
-    unsigned int timeout)
+void USB::DeviceHandle::control_no_data(uint8_t request_type, uint8_t request,
+                                        uint16_t value, uint16_t index,
+                                        unsigned int timeout)
 {
     assert((request_type & LIBUSB_ENDPOINT_DIR_MASK) == 0);
-    check_fn(
-        "libusb_control_transfer",
-        libusb_control_transfer(
-            handle, request_type | LIBUSB_ENDPOINT_OUT, request, value, index,
-            nullptr, 0, timeout),
-        0);
+    check_fn("libusb_control_transfer",
+             libusb_control_transfer(handle, request_type | LIBUSB_ENDPOINT_OUT, request,
+                                     value, index, nullptr, 0, timeout),
+             0);
 }
 
-std::size_t USB::DeviceHandle::control_in(
-    uint8_t request_type, uint8_t request, uint16_t value, uint16_t index,
-    void *buffer, std::size_t len, unsigned int timeout)
+std::size_t USB::DeviceHandle::control_in(uint8_t request_type, uint8_t request,
+                                          uint16_t value, uint16_t index, void *buffer,
+                                          std::size_t len, unsigned int timeout)
 {
     assert((request_type & LIBUSB_ENDPOINT_DIR_MASK) == 0);
     assert(len < 65536);
     return static_cast<std::size_t>(check_fn(
         "libusb_control_transfer",
-        libusb_control_transfer(
-            handle, request_type | LIBUSB_ENDPOINT_IN, request, value, index,
-            static_cast<unsigned char *>(buffer), static_cast<uint16_t>(len),
-            timeout),
+        libusb_control_transfer(handle, request_type | LIBUSB_ENDPOINT_IN, request, value,
+                                index, static_cast<unsigned char *>(buffer),
+                                static_cast<uint16_t>(len), timeout),
         0));
 }
 
-void USB::DeviceHandle::control_out(
-    uint8_t request_type, uint8_t request, uint16_t value, uint16_t index,
-    const void *buffer, std::size_t len, unsigned int timeout)
+void USB::DeviceHandle::control_out(uint8_t request_type, uint8_t request, uint16_t value,
+                                    uint16_t index, const void *buffer, std::size_t len,
+                                    unsigned int timeout)
 {
     assert((request_type & LIBUSB_ENDPOINT_DIR_MASK) == 0);
     assert(len < 65536);
-    check_fn(
-        "libusb_control_transfer",
-        libusb_control_transfer(
-            handle, request_type | LIBUSB_ENDPOINT_OUT, request, value, index,
-            static_cast<unsigned char *>(const_cast<void *>(buffer)),
-            static_cast<uint16_t>(len), timeout),
-        0);
+    check_fn("libusb_control_transfer",
+             libusb_control_transfer(
+                 handle, request_type | LIBUSB_ENDPOINT_OUT, request, value, index,
+                 static_cast<unsigned char *>(const_cast<void *>(buffer)),
+                 static_cast<uint16_t>(len), timeout),
+             0);
 }
 
-std::size_t USB::DeviceHandle::interrupt_in(
-    unsigned char endpoint, void *data, std::size_t length,
-    unsigned int timeout)
+std::size_t USB::DeviceHandle::interrupt_in(unsigned char endpoint, void *data,
+                                            std::size_t length, unsigned int timeout)
 {
     assert((endpoint & LIBUSB_ENDPOINT_ADDRESS_MASK) == endpoint);
     assert(length < static_cast<std::size_t>(std::numeric_limits<int>::max()));
     int transferred = -1;
-    check_fn(
-        "libusb_interrupt_transfer",
-        libusb_interrupt_transfer(
-            handle, endpoint | LIBUSB_ENDPOINT_IN,
-            static_cast<unsigned char *>(data), static_cast<int>(length),
-            &transferred, timeout),
-        endpoint | LIBUSB_ENDPOINT_IN);
+    check_fn("libusb_interrupt_transfer",
+             libusb_interrupt_transfer(handle, endpoint | LIBUSB_ENDPOINT_IN,
+                                       static_cast<unsigned char *>(data),
+                                       static_cast<int>(length), &transferred, timeout),
+             endpoint | LIBUSB_ENDPOINT_IN);
     assert(transferred >= 0);
     return static_cast<std::size_t>(transferred);
 }
 
-void USB::DeviceHandle::interrupt_out(
-    unsigned char endpoint, const void *data, std::size_t length,
-    unsigned int timeout)
+void USB::DeviceHandle::interrupt_out(unsigned char endpoint, const void *data,
+                                      std::size_t length, unsigned int timeout)
 {
     assert((endpoint & LIBUSB_ENDPOINT_ADDRESS_MASK) == endpoint);
     assert(length < static_cast<std::size_t>(std::numeric_limits<int>::max()));
     int transferred;
-    check_fn(
-        "libusb_interrupt_transfer",
-        libusb_interrupt_transfer(
-            handle, endpoint | LIBUSB_ENDPOINT_OUT,
-            const_cast<unsigned char *>(
-                static_cast<const unsigned char *>(data)),
-            static_cast<int>(length), &transferred, timeout),
-        endpoint | LIBUSB_ENDPOINT_OUT);
+    check_fn("libusb_interrupt_transfer",
+             libusb_interrupt_transfer(
+                 handle, endpoint | LIBUSB_ENDPOINT_OUT,
+                 const_cast<unsigned char *>(static_cast<const unsigned char *>(data)),
+                 static_cast<int>(length), &transferred, timeout),
+             endpoint | LIBUSB_ENDPOINT_OUT);
     if (transferred != static_cast<int>(length))
     {
         throw TransferError(1, u8"Device accepted wrong amount of data");
     }
 }
 
-std::size_t USB::DeviceHandle::bulk_in(
-    unsigned char endpoint, void *data, std::size_t length,
-    unsigned int timeout)
+std::size_t USB::DeviceHandle::bulk_in(unsigned char endpoint, void *data,
+                                       std::size_t length, unsigned int timeout)
 {
     assert((endpoint & LIBUSB_ENDPOINT_ADDRESS_MASK) == endpoint);
     assert(length < static_cast<std::size_t>(std::numeric_limits<int>::max()));
     int transferred = -1;
-    check_fn(
-        "libusb_bulk_transfer",
-        libusb_bulk_transfer(
-            handle, endpoint | LIBUSB_ENDPOINT_IN,
-            static_cast<unsigned char *>(data), static_cast<uint16_t>(length),
-            &transferred, timeout),
-        endpoint | LIBUSB_ENDPOINT_IN);
+    check_fn("libusb_bulk_transfer",
+             libusb_bulk_transfer(handle, endpoint | LIBUSB_ENDPOINT_IN,
+                                  static_cast<unsigned char *>(data),
+                                  static_cast<uint16_t>(length), &transferred, timeout),
+             endpoint | LIBUSB_ENDPOINT_IN);
     assert(transferred >= 0);
     return static_cast<std::size_t>(transferred);
 }
@@ -573,27 +534,21 @@ void USB::DeviceHandle::mark_shutting_down()
 
 void USB::DeviceHandle::init_descriptors()
 {
-    check_fn(
-        "libusb_get_device_descriptor",
-        libusb_get_device_descriptor(
-            libusb_get_device(handle), &device_descriptor_),
-        0);
+    check_fn("libusb_get_device_descriptor",
+             libusb_get_device_descriptor(libusb_get_device(handle), &device_descriptor_),
+             0);
     for (uint8_t i = 0; i < device_descriptor_.bNumConfigurations; ++i)
     {
         libusb_config_descriptor *desc = nullptr;
-        check_fn(
-            "libusb_get_configuration_descriptor",
-            libusb_get_config_descriptor(libusb_get_device(handle), i, &desc),
-            0);
-        std::unique_ptr<
-            libusb_config_descriptor, void (*)(libusb_config_descriptor *)>
+        check_fn("libusb_get_configuration_descriptor",
+                 libusb_get_config_descriptor(libusb_get_device(handle), i, &desc), 0);
+        std::unique_ptr<libusb_config_descriptor, void (*)(libusb_config_descriptor *)>
             ptr(desc, &libusb_free_config_descriptor);
         config_descriptors.push_back(std::move(ptr));
     }
 }
 
-USB::ConfigurationSetter::ConfigurationSetter(
-    DeviceHandle &device, int configuration)
+USB::ConfigurationSetter::ConfigurationSetter(DeviceHandle &device, int configuration)
     : device(device)
 {
     original_configuration = device.get_configuration();
@@ -604,8 +559,7 @@ USB::ConfigurationSetter::~ConfigurationSetter()
 {
     try
     {
-        device.set_configuration(
-            original_configuration ? original_configuration : -1);
+        device.set_configuration(original_configuration ? original_configuration : -1);
     }
     catch (const std::exception &exp)
     {
@@ -668,12 +622,11 @@ USB::Transfer::~Transfer()
                     u8"Destroying in-progress transfer to USB %1 endpoint %2; "
                     u8"this is unreliable and may be a problem if not "
                     u8"happening during system shutdown!",
-                    ((transfer->endpoint & LIBUSB_ENDPOINT_DIR_MASK) ==
-                             LIBUSB_ENDPOINT_IN
+                    ((transfer->endpoint & LIBUSB_ENDPOINT_DIR_MASK) == LIBUSB_ENDPOINT_IN
                          ? u8"in"
                          : u8"out"),
-                    static_cast<unsigned int>(
-                        transfer->endpoint & LIBUSB_ENDPOINT_ADDRESS_MASK)));
+                    static_cast<unsigned int>(transfer->endpoint &
+                                              LIBUSB_ENDPOINT_ADDRESS_MASK)));
             }
             libusb_cancel_transfer(transfer);
             TransferMetadata::get(transfer)->disown();
@@ -719,12 +672,11 @@ void USB::Transfer::result() const
             throw TransferStallError(transfer->endpoint);
 
         case LIBUSB_TRANSFER_NO_DEVICE:
-            throw TransferError(
-                transfer->endpoint, u8"Device was disconnected");
+            throw TransferError(transfer->endpoint, u8"Device was disconnected");
 
         case LIBUSB_TRANSFER_OVERFLOW:
-            throw TransferError(
-                transfer->endpoint, u8"Device sent more data than requested");
+            throw TransferError(transfer->endpoint,
+                                u8"Device sent more data than requested");
 
         default:
             throw std::runtime_error("Error fetching error message");
@@ -734,9 +686,8 @@ void USB::Transfer::result() const
 void USB::Transfer::submit()
 {
     assert(!submitted_);
-    check_fn(
-        "libusb_submit_transfer", libusb_submit_transfer(transfer),
-        transfer->endpoint);
+    check_fn("libusb_submit_transfer", libusb_submit_transfer(transfer),
+             transfer->endpoint);
     submitted_         = true;
     done_              = false;
     stall_retries_left = retry_on_stall_ ? 30 : 0;
@@ -773,9 +724,8 @@ void USB::Transfer::handle_completed_transfer()
     {
         LOG_INFO(u8"Retrying stalled transfer.");
         --stall_retries_left;
-        check_fn(
-            "libusb_submit_transfer", libusb_submit_transfer(transfer),
-            transfer->endpoint);
+        check_fn("libusb_submit_transfer", libusb_submit_transfer(transfer),
+                 transfer->endpoint);
         ++device.submitted_transfer_count;
         return;
     }
@@ -784,66 +734,62 @@ void USB::Transfer::handle_completed_transfer()
     signal_done.emit(*this);
 }
 
-USB::ControlNoDataTransfer::ControlNoDataTransfer(
-    DeviceHandle &dev, uint8_t request_type, uint8_t request, uint16_t value,
-    uint16_t index, unsigned int timeout)
+USB::ControlNoDataTransfer::ControlNoDataTransfer(DeviceHandle &dev, uint8_t request_type,
+                                                  uint8_t request, uint16_t value,
+                                                  uint16_t index, unsigned int timeout)
     : Transfer(dev)
 {
     unsigned char *buffer = new unsigned char[8];
     libusb_fill_control_setup(buffer, request_type, request, value, index, 0);
-    libusb_fill_control_transfer(
-        transfer, dev.handle, buffer,
-        &usb_transfer_handle_completed_transfer_trampoline, transfer->user_data,
-        timeout);
+    libusb_fill_control_transfer(transfer, dev.handle, buffer,
+                                 &usb_transfer_handle_completed_transfer_trampoline,
+                                 transfer->user_data, timeout);
 }
 
-USB::ControlInTransfer::ControlInTransfer(
-    DeviceHandle &dev, uint8_t request_type, uint8_t request, uint16_t value,
-    uint16_t index, std::size_t len, bool exact_len, unsigned int timeout)
+USB::ControlInTransfer::ControlInTransfer(DeviceHandle &dev, uint8_t request_type,
+                                          uint8_t request, uint16_t value, uint16_t index,
+                                          std::size_t len, bool exact_len,
+                                          unsigned int timeout)
     : Transfer(dev)
 {
     unsigned char *buffer = new unsigned char[8 + len];
-    libusb_fill_control_setup(
-        buffer, request_type | LIBUSB_ENDPOINT_IN, request, value, index,
-        static_cast<uint16_t>(len));
-    libusb_fill_control_transfer(
-        transfer, dev.handle, buffer,
-        &usb_transfer_handle_completed_transfer_trampoline, transfer->user_data,
-        timeout);
+    libusb_fill_control_setup(buffer, request_type | LIBUSB_ENDPOINT_IN, request, value,
+                              index, static_cast<uint16_t>(len));
+    libusb_fill_control_transfer(transfer, dev.handle, buffer,
+                                 &usb_transfer_handle_completed_transfer_trampoline,
+                                 transfer->user_data, timeout);
     if (exact_len)
     {
         transfer->flags |= LIBUSB_TRANSFER_SHORT_NOT_OK;
     }
 }
 
-USB::InterruptInTransfer::InterruptInTransfer(
-    DeviceHandle &dev, unsigned char endpoint, std::size_t len, bool exact_len,
-    unsigned int timeout)
+USB::InterruptInTransfer::InterruptInTransfer(DeviceHandle &dev, unsigned char endpoint,
+                                              std::size_t len, bool exact_len,
+                                              unsigned int timeout)
     : Transfer(dev)
 {
     assert((endpoint & LIBUSB_ENDPOINT_ADDRESS_MASK) == endpoint);
-    libusb_fill_interrupt_transfer(
-        transfer, dev.handle, endpoint | LIBUSB_ENDPOINT_IN,
-        new unsigned char[len], static_cast<int>(len),
-        &usb_transfer_handle_completed_transfer_trampoline, transfer->user_data,
-        timeout);
+    libusb_fill_interrupt_transfer(transfer, dev.handle, endpoint | LIBUSB_ENDPOINT_IN,
+                                   new unsigned char[len], static_cast<int>(len),
+                                   &usb_transfer_handle_completed_transfer_trampoline,
+                                   transfer->user_data, timeout);
     if (exact_len)
     {
         transfer->flags |= LIBUSB_TRANSFER_SHORT_NOT_OK;
     }
 }
 
-USB::InterruptOutTransfer::InterruptOutTransfer(
-    DeviceHandle &dev, unsigned char endpoint, const void *data,
-    std::size_t len, std::size_t max_len, unsigned int timeout)
+USB::InterruptOutTransfer::InterruptOutTransfer(DeviceHandle &dev, unsigned char endpoint,
+                                                const void *data, std::size_t len,
+                                                std::size_t max_len, unsigned int timeout)
     : Transfer(dev)
 {
     assert((endpoint & LIBUSB_ENDPOINT_ADDRESS_MASK) == endpoint);
-    libusb_fill_interrupt_transfer(
-        transfer, dev.handle, endpoint | LIBUSB_ENDPOINT_OUT,
-        new unsigned char[len], static_cast<int>(len),
-        &usb_transfer_handle_completed_transfer_trampoline, transfer->user_data,
-        timeout);
+    libusb_fill_interrupt_transfer(transfer, dev.handle, endpoint | LIBUSB_ENDPOINT_OUT,
+                                   new unsigned char[len], static_cast<int>(len),
+                                   &usb_transfer_handle_completed_transfer_trampoline,
+                                   transfer->user_data, timeout);
     if (!max_len || len != max_len)
     {
         transfer->flags |= LIBUSB_TRANSFER_ADD_ZERO_PACKET;
@@ -851,34 +797,31 @@ USB::InterruptOutTransfer::InterruptOutTransfer(
     std::memcpy(transfer->buffer, data, len);
 }
 
-USB::BulkInTransfer::BulkInTransfer(
-    DeviceHandle &dev, unsigned char endpoint, std::size_t len, bool exact_len,
-    unsigned int timeout)
+USB::BulkInTransfer::BulkInTransfer(DeviceHandle &dev, unsigned char endpoint,
+                                    std::size_t len, bool exact_len, unsigned int timeout)
     : Transfer(dev)
 {
     assert((endpoint & LIBUSB_ENDPOINT_ADDRESS_MASK) == endpoint);
-    libusb_fill_bulk_transfer(
-        transfer, dev.handle, endpoint | LIBUSB_ENDPOINT_IN,
-        new unsigned char[len], static_cast<int>(len),
-        &usb_transfer_handle_completed_transfer_trampoline, transfer->user_data,
-        timeout);
+    libusb_fill_bulk_transfer(transfer, dev.handle, endpoint | LIBUSB_ENDPOINT_IN,
+                              new unsigned char[len], static_cast<int>(len),
+                              &usb_transfer_handle_completed_transfer_trampoline,
+                              transfer->user_data, timeout);
     if (exact_len)
     {
         transfer->flags |= LIBUSB_TRANSFER_SHORT_NOT_OK;
     }
 }
 
-USB::BulkOutTransfer::BulkOutTransfer(
-    DeviceHandle &dev, unsigned char endpoint, const void *data,
-    std::size_t len, std::size_t max_len, unsigned int timeout)
+USB::BulkOutTransfer::BulkOutTransfer(DeviceHandle &dev, unsigned char endpoint,
+                                      const void *data, std::size_t len,
+                                      std::size_t max_len, unsigned int timeout)
     : Transfer(dev)
 {
     assert((endpoint & LIBUSB_ENDPOINT_ADDRESS_MASK) == endpoint);
-    libusb_fill_bulk_transfer(
-        transfer, dev.handle, endpoint | LIBUSB_ENDPOINT_OUT,
-        new unsigned char[len], static_cast<int>(len),
-        &usb_transfer_handle_completed_transfer_trampoline, transfer->user_data,
-        timeout);
+    libusb_fill_bulk_transfer(transfer, dev.handle, endpoint | LIBUSB_ENDPOINT_OUT,
+                              new unsigned char[len], static_cast<int>(len),
+                              &usb_transfer_handle_completed_transfer_trampoline,
+                              transfer->user_data, timeout);
     if (!max_len || len != max_len)
     {
         transfer->flags |= LIBUSB_TRANSFER_ADD_ZERO_PACKET;

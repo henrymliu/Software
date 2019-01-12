@@ -2,7 +2,9 @@
 #define UTIL_PROPERTY_H
 
 #include <sigc++/signal.h>
+
 #include <utility>
+
 #include "util/noncopyable.h"
 
 /**
@@ -20,18 +22,14 @@ class Property final : public NonCopyable
      *
      * \param[in] value the value with which to initialize the Property.
      */
-    explicit Property(const T &value) : value(value)
-    {
-    }
+    explicit Property(const T &value) : value(value) {}
 
     /**
      * \brief Move-constructs a new Property.
      *
      * \param[in] value the value with which to initialize the Property.
      */
-    explicit Property(T &&value) : value(std::move(value))
-    {
-    }
+    explicit Property(T &&value) : value(std::move(value)) {}
 
     /**
      * \brief Move-constructs a Property.

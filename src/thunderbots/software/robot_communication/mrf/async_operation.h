@@ -2,7 +2,9 @@
 #define UTIL_ASYNC_OPERATION_H
 
 #include <sigc++/signal.h>
+
 #include <memory>
+
 #include "util/noncopyable.h"
 
 /**

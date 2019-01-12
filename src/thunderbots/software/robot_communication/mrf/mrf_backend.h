@@ -1,14 +1,15 @@
 #pragma once
 
-#include "robot_communication/backend.h"
+#include <limits>
+
 #include "ai/world/ball.h"
 #include "ai/world/team.h"
 #include "dongle.h"
-#include <limits>
+#include "robot_communication/backend.h"
 
 class MrfBackend : public Backend
 {
-public:
+   public:
     /**
      * Creates new mrf backend, using the dongle class.
      * Automatically connects to the dongle upon initialization.
@@ -21,7 +22,7 @@ public:
      * @param primitives the list of primitives to send
      */
     void sendPrimitives(
-        const std::vector<std::unique_ptr<Primitive>> &primitives) override;
+        const std::vector<std::unique_ptr<Primitive>>& primitives) override;
 
     void update_detbots(std::vector<std::tuple<uint8_t, Point, Angle>> ft);
     void update_ball(Ball b);
@@ -29,7 +30,8 @@ public:
     void send_vision_packet();
 
     ~MrfBackend();
-private:
+
+   private:
     MRFDongle& dongle;
     std::vector<std::tuple<uint8_t, Point, Angle>> detbots;
     Ball ball;

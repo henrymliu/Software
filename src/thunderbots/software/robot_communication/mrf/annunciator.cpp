@@ -1,6 +1,8 @@
 #include "annunciator.h"
+
 #include <glibmm/main.h>
 #include <glibmm/spawn.h>
+
 #include <cassert>
 #include <iostream>
 #include <unordered_map>
@@ -8,21 +10,21 @@
 
 namespace
 {
-const unsigned int MAX_AGE = 20;
+    const unsigned int MAX_AGE = 20;
 
-unsigned int next_id = 0;
+    unsigned int next_id = 0;
 
-std::unordered_map<unsigned int, Annunciator::Message *> &registered()
-{
-    static std::unordered_map<unsigned int, Annunciator::Message *> r;
-    return r;
-}
+    std::unordered_map<unsigned int, Annunciator::Message *> &registered()
+    {
+        static std::unordered_map<unsigned int, Annunciator::Message *> r;
+        return r;
+    }
 
-std::vector<Annunciator::Message *> displayed;
-}
+    std::vector<Annunciator::Message *> displayed;
+}  // namespace
 
-Annunciator::Message::Message(
-    const Glib::ustring &text, TriggerMode mode, Severity severity)
+Annunciator::Message::Message(const Glib::ustring &text, TriggerMode mode,
+                              Severity severity)
     : mode(mode),
       severity(severity),
       id(next_id++),
@@ -143,8 +145,7 @@ void Annunciator::Message::hide()
             signal_message_hidden.emit(i);
             displayed.erase(
                 displayed.begin() +
-                static_cast<
-                    std::vector<Annunciator::Message *>::difference_type>(i));
+                static_cast<std::vector<Annunciator::Message *>::difference_type>(i));
             --i;
         }
     }

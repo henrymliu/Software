@@ -117,7 +117,7 @@ class Primitive
 
     /**
      * Returns the enum corresponding to the primitive type.
-     * 
+     *
      * @return the primitive type
      */
     virtual PrimitiveType getPrimitiveType() const = 0;

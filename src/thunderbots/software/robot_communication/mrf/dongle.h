@@ -10,6 +10,7 @@
 #include <sigc++/connection.h>
 #include <sigc++/signal.h>
 #include <sigc++/trackable.h>
+
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -19,14 +20,14 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+
+#include "async_operation.h"
 #include "geom/angle.h"
 #include "geom/point.h"
-#include "shared/constants.h"
-#include "async_operation.h"
 #include "libusb.h"
+#include "shared/constants.h"
 // #include "annunciator.h"
 #include "ai/primitive/primitive.h"
-
 #include "util/noncopyable.h"
 #include "util/property.h"
 
@@ -50,8 +51,7 @@ class MRFDongle final
      *
      * \param[in] length the length of the message
      */
-    sigc::signal<void, unsigned int, const void *, std::size_t>
-        signal_message_received;
+    sigc::signal<void, unsigned int, const void *, std::size_t> signal_message_received;
 
     /**
      * \brief Constructs a new MRFDongle.
@@ -132,11 +132,10 @@ class MRFDongle final
      */
     // void log_to(MRFPacketLogger &logger);
 
-    void build_drive_packet(const std::vector<std::unique_ptr<Primitive>>& prims);
+    void build_drive_packet(const std::vector<std::unique_ptr<Primitive>> &prims);
 
-    void send_camera_packet(
-        std::vector<std::tuple<uint8_t, Point, Angle>> robots, Point ball,
-        uint64_t timestamp);
+    void send_camera_packet(std::vector<std::tuple<uint8_t, Point, Angle>> robots,
+                            Point ball, uint64_t timestamp);
 
    private:
     // friend class MRFRobot;
@@ -175,15 +174,14 @@ class MRFDongle final
     void handle_status(AsyncOperation<void> &);
 
     bool submit_drive_transfer();
-    void encode_primitive(const std::unique_ptr<Primitive>& prim, void *out);
+    void encode_primitive(const std::unique_ptr<Primitive> &prim, void *out);
     void handle_drive_transfer_done(AsyncOperation<void> &);
     void handle_camera_transfer_done(
         AsyncOperation<void> &,
-        std::list<std::pair<std::unique_ptr<USB::BulkOutTransfer>, uint64_t>>::
-            iterator iter);
-    void send_unreliable(
-        unsigned int robot, unsigned int tries, const void *data,
-        std::size_t len);
+        std::list<std::pair<std::unique_ptr<USB::BulkOutTransfer>, uint64_t>>::iterator
+            iter);
+    void send_unreliable(unsigned int robot, unsigned int tries, const void *data,
+                         std::size_t len);
     void check_unreliable_transfer(
         AsyncOperation<void> &,
         std::list<std::unique_ptr<USB::BulkOutTransfer>>::iterator iter);
@@ -191,9 +189,8 @@ class MRFDongle final
     void handle_beep_done(AsyncOperation<void> &);
 };
 
-class MRFDongle::SendReliableMessageOperation final
-    : public AsyncOperation<void>,
-      public sigc::trackable
+class MRFDongle::SendReliableMessageOperation final : public AsyncOperation<void>,
+                                                      public sigc::trackable
 {
    public:
     /**
@@ -224,9 +221,9 @@ class MRFDongle::SendReliableMessageOperation final
      * buffer)
      * \param[in] len the length of the data, including the header
      */
-    explicit SendReliableMessageOperation(
-        MRFDongle &dongle, unsigned int robot, unsigned int tries,
-        const void *data, std::size_t len);
+    explicit SendReliableMessageOperation(MRFDongle &dongle, unsigned int robot,
+                                          unsigned int tries, const void *data,
+                                          std::size_t len);
 
     /**
      * \brief Checks for the success of the operation.
