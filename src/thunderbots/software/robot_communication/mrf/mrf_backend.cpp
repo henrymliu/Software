@@ -27,9 +27,18 @@ void MrfBackend::update_ball(Ball b)
 void MrfBackend::send_vision_packet()
 {
     /* TODO: Change handling of timestamp depending on age of team vs ball */
-    /* Also see issue #150 */
-    dongle.send_camera_packet(detbots, ball.position(),
-                              std::chrono::duration_cast<std::chrono::milliseconds>(
-                                  ball.lastUpdateTimestamp().time_since_epoch())
-                                  .count());
+    uint64_t timestamp = std::chrono::duration_cast<std::chrono::seconds>(
+                                 ball.lastUpdateTimestamp().time_since_epoch()).count();    
+            std::cout << "Calling dongle.send_camera_packet with: ";
+            for (std::size_t i = 0; i < detbots.size(); ++i) {
+                    std::cout << "bot number = " <<
+       unsigned(std::get<0>(detbots[i])) << ", ";
+                    std::cout << "x = " << (std::get<1>(detbots[i])).x() << ", ";
+                    std::cout << "y = " << (std::get<1>(detbots[i])).y() << ", ";
+                    std::cout << "time capture = " << timestamp << ", ";
+                    std::cout << "theta = " <<
+       (std::get<2>(detbots[i])).toDegrees() << std::endl;
+            }
+    
+    dongle.send_camera_packet(detbots, ball.position()*1000, timestamp);
 }

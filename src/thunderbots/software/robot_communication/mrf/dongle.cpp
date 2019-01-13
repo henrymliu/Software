@@ -704,8 +704,8 @@ void MRFDongle::handle_camera_transfer_done(
     uint64_t stamp = static_cast<uint64_t>(micros.count());
 
     std::lock_guard<std::mutex> lock(cam_mtx);
-    // std::cout << "Camera transfer done, took: " << stamp - (*iter).second <<
-    // " microseconds" << std::endl;
+    std::cout << "Camera transfer done, took: " << stamp - (*iter).second <<
+    " microseconds" << std::endl;
     (*iter).first->result();
     camera_transfers.erase(iter);
 }
