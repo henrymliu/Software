@@ -525,18 +525,11 @@ void MRFDongle::send_camera_packet(std::vector<std::tuple<uint8_t, Point, Angle>
 
 void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>> &prims)
 {
-    /*
-    if (!drive_submit_connection.connected())
-    {
-        // Tells the Glib control loop to send a drive transfer when it has
-        // nothing else to do (only once though)
-        // This should ensure the AI tick function completes before it sends a
-        // drive packet
-        drive_submit_connection = Glib::signal_idle().connect(
-            sigc::mem_fun(this, &MRFDongle::submit_drive_transfer));
-    }*/
-
     std::size_t num_prims = prims.size();
+    if (num_prims >= MAX_ROBOT_ID)
+    {
+        throw std::invalid_argument("Too many primitives in vector.");
+    }
 
     // More than 1 prim.
     if (num_prims)
