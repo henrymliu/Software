@@ -2,7 +2,7 @@
 
 #include <geom/angle.h>
 
-#include "primitive.h"
+#include "ai/primitive/primitive.h"
 
 class CatchPrimitive : public Primitive
 {
@@ -59,6 +59,8 @@ class CatchPrimitive : public Primitive
      * @return an empty vector
      */
     std::vector<bool> getExtraBits() const override;
+
+    void accept(PrimitiveVisitor &visitor) const override;
 
    private:
     unsigned int robot_id;

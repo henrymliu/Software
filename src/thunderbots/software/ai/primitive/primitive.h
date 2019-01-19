@@ -87,6 +87,13 @@ enum class PrimitiveType
      */
     DIRECT_VELOCITY = 8,
 };
+// We forward-declare the PrimitiveVisitor interface (pure virtual class) because we need
+// to know about the existence of this class in order to accept visitors with the
+// accept() function. We cannot use an #include statement because this creates a cyclic
+// dependency
+//
+// This class can be found in ai/primitive/visitor/primitive_visitor.h
+class PrimitiveVisitor;
 
 /**
  * Defines a Robot Primitive, which is the most basic action / unit of work a robot can
@@ -157,6 +164,13 @@ class Primitive
      */
     void validatePrimitiveMessage(const thunderbots_msgs::Primitive& prim_msg,
                                   std::string prim_name) const;
+
+    /**
+     * Accepts a Primitive Visitor and calls the visit function
+     *
+     * @param visitor A Primitive Visitor
+     */
+    virtual void accept(PrimitiveVisitor& visitor) const = 0;
 
     /**
      * Given a ROS Primitive message, constructs a concrete Primitive object and returns
