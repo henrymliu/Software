@@ -22,7 +22,7 @@ namespace Util
 
         // Networking and vision
         static const std::string SSL_VISION_MULTICAST_ADDRESS = "224.5.23.2";
-        static const unsigned short SSL_VISION_MULTICAST_PORT = 10020;
+        static const unsigned short SSL_VISION_MULTICAST_PORT = 10006;
 
         // There are 4 cameras for SSL Division B
         static const unsigned int NUMBER_OF_SSL_VISION_CAMERAS = 4;

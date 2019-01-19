@@ -55,7 +55,7 @@ double MovePrimitive::getFinalSpeed() const
 
 std::vector<double> MovePrimitive::getParameters() const
 {
-    std::vector<double> parameters = {dest.x(), dest.y(), final_angle.toRadians(),
+    std::vector<double> parameters = {dest.x() * 1000, dest.y() * 1000, final_angle.toRadians(),
                                       final_speed};
 
     return parameters;
