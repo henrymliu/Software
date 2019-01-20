@@ -64,17 +64,22 @@ class MRFDongle final
     ~MRFDongle();
 
     /**
-     * \brief Fetches an individual robot proxy.
-     *
-     * \param[in] i the robot number
-     *
-     * \return the robot proxy object that allows communication with the robot
+     * Given a vector primitives, constructs a single drive packet to send over radio 
+     * to all robots.
+     * 
+     * \param prims vector of primatives from HL
      */
-    // MRFRobot &robot(unsigned int i) override
-    // {
-    //     assert(i < 8);
-    //     return *robots[i].get();
-    // }
+    void build_drive_packet(const std::vector<std::unique_ptr<Primitive>> &prims);
+
+    /**
+     * Sends a camera packet over radio to all robots, including vision coordinates of
+     * all robots and the ball.
+     * \param robots
+     * \param ball
+     * \param timestamp
+     */
+    void send_camera_packet(std::vector<std::tuple<uint8_t, Point, Angle>> robots,
+                            Point ball, uint64_t timestamp);
 
     /**
      * \brief Generates an audible beep on the dongle.
@@ -95,6 +100,7 @@ class MRFDongle final
 
     /**
      * Handles libusb callbacks.
+     * IMPORTANT: MUST BE CALLED ON EACH LOOP
      */
     void handle_libusb_events();
 
@@ -124,25 +130,10 @@ class MRFDongle final
      */
     Property<EStopState> estop_state;
 
-
-    /**
-     * \brief Sets the logger to which to log packets.
-     *
-     * \param[in] logger the logger to log to
-     */
-    // void log_to(MRFPacketLogger &logger);
-
-    void build_drive_packet(const std::vector<std::unique_ptr<Primitive>> &prims);
-
-    void send_camera_packet(std::vector<std::tuple<uint8_t, Point, Angle>> robots,
-                            Point ball, uint64_t timestamp);
-
    private:
-    // friend class MRFRobot;
     friend class SendReliableMessageOperation;
 
     std::mutex cam_mtx;
-    // MRFPacketLogger *logger;
     USB::Context context;
     USB::DeviceHandle device;
     int radio_interface, configuration_altsetting, normal_altsetting;

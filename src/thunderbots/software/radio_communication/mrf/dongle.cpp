@@ -525,17 +525,6 @@ void MRFDongle::send_camera_packet(std::vector<std::tuple<uint8_t, Point, Angle>
 
 void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>> &prims)
 {
-    /*
-    if (!drive_submit_connection.connected())
-    {
-        // Tells the Glib control loop to send a drive transfer when it has
-        // nothing else to do (only once though)
-        // This should ensure the AI tick function completes before it sends a
-        // drive packet
-        drive_submit_connection = Glib::signal_idle().connect(
-            sigc::mem_fun(this, &MRFDongle::submit_drive_transfer));
-    }*/
-
     std::size_t num_prims = prims.size();
 
     // More than 1 prim.
@@ -587,10 +576,6 @@ bool MRFDongle::submit_drive_transfer()
         drive_transfer->submit();
         std::cout << "Drive transfer of length " << drive_packet_length << " submitted"
                   << std::endl;
-        // if (logger)
-        // {
-        //     logger->log_mrf_drive(drive_packet, length);
-        // }
     }
     return false;
 }
@@ -686,6 +671,7 @@ void MRFDongle::handle_drive_transfer_done(AsyncOperation<void> &op)
     op.result();
     drive_transfer.reset();
 
+    // TODO: handle what happens if transfer did not complete???
     // if (std::find_if(
     //         robots, robots + sizeof(robots) / sizeof(*robots),
     //         [](const std::unique_ptr<MRFRobot> &bot) {
@@ -721,10 +707,6 @@ void MRFDongle::send_unreliable(unsigned int robot, unsigned int tries, const vo
     std::cout << "sending unreliable packet" << std::endl;
     assert(robot < 8);
     assert((1 <= tries) && (tries <= 256));
-    // if (logger)
-    // {
-    //     logger->log_mrf_message_out(robot, false, 0, data, len);
-    // }
     uint8_t buffer[len + 2];
     buffer[0] = static_cast<uint8_t>(robot);
     buffer[1] = static_cast<uint8_t>(tries & 0xFF);
