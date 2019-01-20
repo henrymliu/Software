@@ -17,14 +17,6 @@
 #include "util/logger/init.h"
 #include "util/ros_messages.h"
 
-// Member variables we need to maintain state
-
-// A vector of primitives. It is cleared each tick, populated by the callbacks
-// that receive primitive commands, and is processed by the backend to send
-// the primitives to the system we have chosen (such as grSim, our radio, etc.)
-MRFDongle dongle   = MRFDongle();
-MrfBackend backend = MrfBackend(dongle);
-static constexpr unsigned int TICK_RATE = 60;
 
 namespace
 {
@@ -33,7 +25,10 @@ namespace
     // the Primitives in grSim
     std::vector<std::unique_ptr<Primitive>> primitives;
 
+    MRFDongle dongle                        = MRFDongle();
+    MrfBackend backend                      = MrfBackend(dongle);
     Team friendly_team = Team(std::chrono::milliseconds(1000));
+
 }  // namespace
 
 // Callbacks
@@ -56,7 +51,7 @@ void ballUpdateCallback(const thunderbots_msgs::Ball::ConstPtr& msg)
     // Send vision packet
     // TODO test this; I have a feeling that it may be
     // better to have a combined ball + team callback
-    backend.send_vision_packet();
+    // backend.send_vision_packet();
 }
 
 void friendlyTeamUpdateCallback(const thunderbots_msgs::Team::ConstPtr& msg)
@@ -79,8 +74,10 @@ void friendlyTeamUpdateCallback(const thunderbots_msgs::Team::ConstPtr& msg)
 int main(int argc, char** argv)
 {
     // Init ROS node
-    ros::init(argc, argv, "grsim_communication");
+    ros::init(argc, argv, "radio_communication");
     ros::NodeHandle node_handle;
+
+    ros::Rate tick_rate(60);
 
     // Create subscribers to topics we care about
     ros::Subscriber prim_array_sub = node_handle.subscribe(
@@ -97,21 +94,18 @@ int main(int argc, char** argv)
     // Initialize variables
     primitives = std::vector<std::unique_ptr<Primitive>>();
 
-    // We loop at a set rate so that we don't overload the network with too many packets
-    ros::Rate tick_rate(TICK_RATE);
-
     // Main loop
     while (ros::ok())
     {
         // Clear all primitives each tick
         primitives.clear();
+
+        for (unsigned i = 0; i <= 7; ++i)
+        {
             primitives.emplace_back(
-            std::make_unique<MovePrimitive>(0, Point(-1, 1),
-                                            Angle::ofDegrees(200), 0));
-    primitives.emplace_back(
-        std::make_unique<MovePrimitive>(7, Point(-1, -1),
-                                        Angle::ofDegrees(30), 3)); 
-                                          
+                std::make_unique<MovePrimitive>(i, Point(-1, -2 + (i / 2.0)), Angle::ofDegrees(200), 0));
+        }
+
         // Send primitives
         backend.sendPrimitives(primitives);
 
@@ -120,8 +114,7 @@ int main(int argc, char** argv)
 
         // Spin once to let all necessary callbacks run
         // The callbacks will populate the primitives vector
-        ros::spin();
-
+        ros::spinOnce();
         tick_rate.sleep();
     }
 

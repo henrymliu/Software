@@ -541,7 +541,7 @@ void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>>
     // More than 1 prim.
     if (num_prims)
     {
-        if (num_prims == MAX_ROBOT_ID - 1)
+        if (num_prims == MAX_ROBOTS)
         {
             // All robots are present. Build a full-size packet with all the
             // robots’ data in index order.
@@ -551,7 +551,7 @@ void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>>
             }
             drive_packet_length = 64;
         }
-        else
+        else if (num_prims < MAX_ROBOTS)
         {
             // Only some robots are present. Build a reduced-size packet
             // with robot indices prefixed.
@@ -566,6 +566,11 @@ void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>>
                 drive_packet_length += 8;
             }
         }
+        else 
+        {
+            throw std::invalid_argument("Too many primitives in vector");
+        }
+
         submit_drive_transfer();
     }
 }
