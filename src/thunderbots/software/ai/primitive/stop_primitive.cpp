@@ -22,6 +22,11 @@ std::string StopPrimitive::getPrimitiveName() const
     return PRIMITIVE_NAME;
 }
 
+PrimitiveType StopPrimitive::getPrimitiveType() const
+{
+    return PrimitiveType::STOP;
+}
+
 unsigned int StopPrimitive::getRobotId() const
 {
     return robot_id;
