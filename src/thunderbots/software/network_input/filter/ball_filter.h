@@ -27,7 +27,7 @@ typedef struct
 {
     Point position;
     Vector velocity;
-    double timestamp;
+    AITimestamp timestamp;
 } FilteredBallData;
 
 /**

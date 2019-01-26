@@ -1,4 +1,4 @@
-#include "backend.h"
+#include "network_input/backend.h"
 
 #include "network_input/util/ros_messages.h"
 #include "proto/messages_robocup_ssl_detection.pb.h"
@@ -30,22 +30,24 @@ std::optional<thunderbots_msgs::Ball> Backend::getFilteredBallMsg(
     {
         const SSL_DetectionFrame &detection = packet.detection();
 
-        if(!detection.balls().empty()) {
+        if (!detection.balls().empty())
+        {
             std::vector<SSLBallData> ball_detections = std::vector<SSLBallData>();
             for (const SSL_DetectionBall &ball : detection.balls())
             {
+                // Convert all data to meters and radians
                 SSLBallData ball_data;
-                ball_data.position =
-                        Point(ball.x() * METERS_PER_MILLIMETER, ball.y() * METERS_PER_MILLIMETER);
+                ball_data.position   = Point(ball.x() * METERS_PER_MILLIMETER,
+                                           ball.y() * METERS_PER_MILLIMETER);
                 ball_data.confidence = ball.confidence();
                 ball_data.timestamp  = detection.t_capture();
                 ball_detections.push_back(ball_data);
             }
 
             FilteredBallData filtered_ball_data =
-                    ball_filter.getFilteredData(ball_detections);
+                ball_filter.getFilteredData(ball_detections);
             thunderbots_msgs::Ball ball_msg =
-                    MessageUtil::createBallMsgFromFilteredBallData(filtered_ball_data);
+                MessageUtil::createBallMsgFromFilteredBallData(filtered_ball_data);
             return ball_msg;
         }
     }
@@ -58,8 +60,7 @@ std::optional<thunderbots_msgs::Team> Backend::getFilteredFriendlyTeamMsg(
 {
     if (packet.has_detection())
     {
-        const SSL_DetectionFrame &detection = packet.detection();
-
+        const SSL_DetectionFrame &detection                = packet.detection();
         std::vector<SSLRobotData> friendly_team_robot_data = std::vector<SSLRobotData>();
 
         auto ssl_robots = detection.robots_yellow();
@@ -68,14 +69,19 @@ std::optional<thunderbots_msgs::Team> Backend::getFilteredFriendlyTeamMsg(
             ssl_robots = detection.robots_blue();
         }
 
-        if(!ssl_robots.empty()) {
-            for (const SSL_DetectionRobot &friendly_robot : ssl_robots) {
+        if (!ssl_robots.empty())
+        {
+            for (const SSL_DetectionRobot &friendly_robot : ssl_robots)
+            {
                 SSLRobotData new_robot_data;
 
-                new_robot_data.id          = friendly_robot.robot_id();
-                new_robot_data.position    = Point(friendly_robot.x(), friendly_robot.y());
-                new_robot_data.orientation = Angle::ofRadians(friendly_robot.orientation());
-                new_robot_data.confidence  = friendly_robot.confidence();
+                new_robot_data.id = friendly_robot.robot_id();
+                new_robot_data.position =
+                    Point(friendly_robot.x() * METERS_PER_MILLIMETER,
+                          friendly_robot.y() * METERS_PER_MILLIMETER);
+                new_robot_data.orientation =
+                    Angle::ofRadians(friendly_robot.orientation());
+                new_robot_data.confidence = friendly_robot.confidence();
                 new_robot_data.timestamp =
                     detection.t_capture();  // Units of t_capture is seconds
 
@@ -86,7 +92,8 @@ std::optional<thunderbots_msgs::Team> Backend::getFilteredFriendlyTeamMsg(
                 friendly_team_filter.getFilteredData(friendly_team_robot_data);
 
             thunderbots_msgs::Team friendly_team_msg =
-                MessageUtil::createTeamMsgFromFilteredRobotData(filtered_friendly_team_data);
+                MessageUtil::createTeamMsgFromFilteredRobotData(
+                    filtered_friendly_team_data);
 
             return friendly_team_msg;
         }
@@ -111,15 +118,18 @@ std::optional<thunderbots_msgs::Team> Backend::getFilteredEnemyTeamMsg(
             ssl_robots = detection.robots_blue();
         }
 
-        if(!ssl_robots.empty()) {
+        if (!ssl_robots.empty())
+        {
             for (const SSL_DetectionRobot &enemy_robot : ssl_robots)
             {
                 SSLRobotData new_robot_data;
 
-                new_robot_data.id          = enemy_robot.robot_id();
-                new_robot_data.position    = Point(enemy_robot.x(), enemy_robot.y());
+                new_robot_data.id       = enemy_robot.robot_id();
+                new_robot_data.position = Point(enemy_robot.x() * METERS_PER_MILLIMETER,
+                                                enemy_robot.y() * METERS_PER_MILLIMETER);
                 new_robot_data.orientation = Angle::ofRadians(enemy_robot.orientation());
                 new_robot_data.confidence  = enemy_robot.confidence();
+                new_robot_data.timestamp   = detection.t_capture();
 
                 enemy_team_robot_data.emplace_back(new_robot_data);
             }

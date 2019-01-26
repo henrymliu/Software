@@ -534,7 +534,7 @@ void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>>
     // More than 1 prim.
     if (num_prims)
     {
-        if (num_prims == MAX_ROBOT_ID - 1)
+        if (num_prims == MAX_ROBOTS)
         {
             // All robots are present. Build a full-size packet with all the
             // robots’ data in index order.
@@ -544,7 +544,7 @@ void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>>
             }
             drive_packet_length = 64;
         }
-        else
+        else if (num_prims < MAX_ROBOTS)
         {
             // Only some robots are present. Build a reduced-size packet
             // with robot indices prefixed.
@@ -559,6 +559,11 @@ void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>>
                 drive_packet_length += 8;
             }
         }
+        else 
+        {
+            throw std::invalid_argument("Too many primitives in vector");
+        }
+
         submit_drive_transfer();
     }
 }
@@ -575,10 +580,6 @@ bool MRFDongle::submit_drive_transfer()
         drive_transfer->submit();
         std::cout << "Drive transfer of length " << drive_packet_length << " submitted"
                   << std::endl;
-        // if (logger)
-        // {
-        //     logger->log_mrf_drive(drive_packet, length);
-        // }
     }
     return false;
 }
@@ -674,6 +675,7 @@ void MRFDongle::handle_drive_transfer_done(AsyncOperation<void> &op)
     op.result();
     drive_transfer.reset();
 
+    // TODO: handle what happens if transfer did not complete???
     // if (std::find_if(
     //         robots, robots + sizeof(robots) / sizeof(*robots),
     //         [](const std::unique_ptr<MRFRobot> &bot) {
@@ -709,10 +711,6 @@ void MRFDongle::send_unreliable(unsigned int robot, unsigned int tries, const vo
     std::cout << "sending unreliable packet" << std::endl;
     assert(robot < 8);
     assert((1 <= tries) && (tries <= 256));
-    // if (logger)
-    // {
-    //     logger->log_mrf_message_out(robot, false, 0, data, len);
-    // }
     uint8_t buffer[len + 2];
     buffer[0] = static_cast<uint8_t>(robot);
     buffer[1] = static_cast<uint8_t>(tries & 0xFF);

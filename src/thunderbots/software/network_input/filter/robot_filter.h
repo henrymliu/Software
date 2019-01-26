@@ -31,7 +31,7 @@ typedef struct
     Vector velocity;
     Angle orientation;
     AngularVelocity angular_velocity;
-    double timestamp;
+    AITimestamp timestamp;
 } FilteredRobotData;
 
 class RobotFilter

@@ -1,5 +1,7 @@
 #include "ai/primitive/move_primitive.h"
 
+#include "ai/primitive/visitor/primitive_visitor.h"
+
 const std::string MovePrimitive::PRIMITIVE_NAME = "Move Primitive";
 
 MovePrimitive::MovePrimitive(unsigned int robot_id, const Point &dest,
@@ -53,7 +55,7 @@ double MovePrimitive::getFinalSpeed() const
 
 std::vector<double> MovePrimitive::getParameters() const
 {
-    std::vector<double> parameters = {dest.x(), dest.y(), final_angle.toRadians(),
+    std::vector<double> parameters = {dest.x() * 1000, dest.y() * 1000, final_angle.toRadians(),
                                       final_speed};
 
     return parameters;
@@ -62,4 +64,9 @@ std::vector<double> MovePrimitive::getParameters() const
 std::vector<bool> MovePrimitive::getExtraBits() const
 {
     return std::vector<bool>(false);
+}
+
+void MovePrimitive::accept(PrimitiveVisitor &visitor) const
+{
+    visitor.visit(*this);
 }

@@ -12,30 +12,24 @@
 #include "ai/primitive/move_primitive.h"
 #include "ai/primitive/primitive.h"
 #include "geom/point.h"
-#include "mrf/mrf_backend.h"
-#include "robot_communication/grsim/grsim_backend.h"
+#include "mrf_backend.h"
 #include "util/constants.h"
 #include "util/logger/init.h"
 #include "util/ros_messages.h"
 
-// Constants
-const std::string NETWORK_ADDRESS       = "127.0.0.1";
-static constexpr short NETWORK_PORT     = 20011;
-static constexpr unsigned int TICK_RATE = 30;
-
-// Member variables we need to maintain state
-
-// A vector of primitives. It is cleared each tick, populated by the callbacks
-// that receive primitive commands, and is processed by the backend to send
-// the primitives to the system we have chosen (such as grSim, our radio, etc.)
-std::vector<std::unique_ptr<Primitive>> primitives;
-MRFDongle dongle   = MRFDongle();
-MrfBackend backend = MrfBackend(dongle);
 
 namespace
 {
+    // A vector of primitives. It is cleared each tick, populated by the callbacks
+    // that receive primitive commands, and is processed by the backend to simulate
+    // the Primitives in grSim
+    std::vector<std::unique_ptr<Primitive>> primitives;
+
+    MRFDongle dongle                        = MRFDongle();
+    MrfBackend backend                      = MrfBackend(dongle);
     Team friendly_team = Team(std::chrono::milliseconds(1000));
-}
+
+}  // namespace
 
 // Callbacks
 void primitiveUpdateCallback(const thunderbots_msgs::PrimitiveArray::ConstPtr& msg)
@@ -57,7 +51,7 @@ void ballUpdateCallback(const thunderbots_msgs::Ball::ConstPtr& msg)
     // Send vision packet
     // TODO test this; I have a feeling that it may be
     // better to have a combined ball + team callback
-    backend.send_vision_packet();
+    // backend.send_vision_packet();
 }
 
 void friendlyTeamUpdateCallback(const thunderbots_msgs::Team::ConstPtr& msg)
@@ -69,7 +63,7 @@ void friendlyTeamUpdateCallback(const thunderbots_msgs::Team::ConstPtr& msg)
     std::vector<std::tuple<uint8_t, Point, Angle>> detbots;
     for (const Robot& r : friendly_team.getAllRobots())
     {
-        detbots.push_back(std::make_tuple(r.id(), r.position() / 1000.0, r.orientation()));
+        detbots.push_back(std::make_tuple(r.id(), r.position(), r.orientation()));
     }
     backend.update_detbots(detbots);
 
@@ -80,8 +74,10 @@ void friendlyTeamUpdateCallback(const thunderbots_msgs::Team::ConstPtr& msg)
 int main(int argc, char** argv)
 {
     // Init ROS node
-    ros::init(argc, argv, "robot_communication");
+    ros::init(argc, argv, "radio_communication");
     ros::NodeHandle node_handle;
+
+    ros::Rate tick_rate(60);
 
     // Create subscribers to topics we care about
     ros::Subscriber prim_array_sub = node_handle.subscribe(
@@ -93,28 +89,23 @@ int main(int argc, char** argv)
         Util::Constants::NETWORK_INPUT_BALL_TOPIC, 1, ballUpdateCallback);
 
     // Initialize the logger
-    Util::Logger::LoggerSingleton::initializeLogger();
+    Util::Logger::LoggerSingleton::initializeLogger(node_handle);
 
     // Initialize variables
     primitives = std::vector<std::unique_ptr<Primitive>>();
-
-    // GrSimBackend backend = GrSimBackend(NETWORK_ADDRESS, NETWORK_PORT);
-
-    // We loop at a set rate so that we don't overload the network with too many packets
-    ros::Rate tick_rate(TICK_RATE);
 
     // Main loop
     while (ros::ok())
     {
         // Clear all primitives each tick
         primitives.clear();
+
+        for (unsigned i = 0; i <= 7; ++i)
+        {
             primitives.emplace_back(
-            std::make_unique<MovePrimitive>(2, Point(-1, 1),
-                                            Angle::ofDegrees(200), 3));
-    primitives.emplace_back(
-        std::make_unique<MovePrimitive>(7, Point(-1, -1),
-                                        Angle::ofDegrees(30), 3)); 
-                                          
+                std::make_unique<MovePrimitive>(i, Point(-1, -2 + (i / 2.0)), Angle::ofDegrees(200), 0));
+        }
+
         // Send primitives
         backend.sendPrimitives(primitives);
 
@@ -124,11 +115,6 @@ int main(int argc, char** argv)
         // Spin once to let all necessary callbacks run
         // The callbacks will populate the primitives vector
         ros::spinOnce();
-
-        // backend.updateBackendTeam(friendly_team);
-
-        backend.sendPrimitives(primitives);
-
         tick_rate.sleep();
     }
 
