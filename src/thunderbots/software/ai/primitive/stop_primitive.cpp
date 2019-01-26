@@ -22,11 +22,6 @@ std::string StopPrimitive::getPrimitiveName() const
     return PRIMITIVE_NAME;
 }
 
-PrimitiveType StopPrimitive::getPrimitiveType() const
-{
-    return PrimitiveType::STOP;
-}
-
 unsigned int StopPrimitive::getRobotId() const
 {
     return robot_id;
@@ -36,18 +31,6 @@ unsigned int StopPrimitive::getRobotId() const
 bool StopPrimitive::robotShouldCoast() const
 {
     return coast;
-}
-
-std::vector<double> StopPrimitive::getParameters() const
-{
-    return std::vector<double>();
-}
-
-std::vector<bool> StopPrimitive::getExtraBits() const
-{
-    std::vector<bool> parameter = {coast};
-
-    return parameter;
 }
 
 void StopPrimitive::accept(PrimitiveVisitor &visitor) const

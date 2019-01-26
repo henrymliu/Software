@@ -32,12 +32,6 @@ std::string KickPrimitive::getPrimitiveName() const
     return PRIMITIVE_NAME;
 }
 
-PrimitiveType KickPrimitive::getPrimitiveType() const
-{
-    // In firmware, shoot and chip are the same primitive.
-    return PrimitiveType::SHOOT;
-}
-
 unsigned int KickPrimitive::getRobotId() const
 {
     return robot_id;
@@ -56,20 +50,6 @@ Angle KickPrimitive::getKickDirection() const
 double KickPrimitive::getKickSpeed() const
 {
     return kick_speed_meters_per_second;
-}
-
-std::vector<double> KickPrimitive::getParameters() const
-{
-    std::vector<double> parameters = {kick_origin.x(), kick_origin.y(),
-                                      kick_direction.toRadians(),
-                                      kick_speed_meters_per_second};
-
-    return parameters;
-}
-
-std::vector<bool> KickPrimitive::getExtraBits() const
-{
-    return std::vector<bool>();
 }
 
 void KickPrimitive::accept(PrimitiveVisitor &visitor) const

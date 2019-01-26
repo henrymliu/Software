@@ -33,11 +33,6 @@ unsigned int MovePrimitive::getRobotId() const
     return robot_id;
 }
 
-PrimitiveType MovePrimitive::getPrimitiveType() const
-{
-    return PrimitiveType::MOVE;
-}
-
 Point MovePrimitive::getDestination() const
 {
     return dest;
@@ -51,19 +46,6 @@ Angle MovePrimitive::getFinalAngle() const
 double MovePrimitive::getFinalSpeed() const
 {
     return final_speed;
-}
-
-std::vector<double> MovePrimitive::getParameters() const
-{
-    std::vector<double> parameters = {dest.x() * 1000, dest.y() * 1000, final_angle.toRadians(),
-                                      final_speed};
-
-    return parameters;
-}
-
-std::vector<bool> MovePrimitive::getExtraBits() const
-{
-    return std::vector<bool>(false);
 }
 
 void MovePrimitive::accept(PrimitiveVisitor &visitor) const

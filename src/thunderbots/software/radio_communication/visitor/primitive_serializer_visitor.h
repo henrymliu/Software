@@ -48,6 +48,13 @@ class RadioPacketSerializerPrimitiveVisitor : public PrimitiveVisitor
     void visit(const DirectVelocityPrimitive &direct_velocity_primtiive) override;
 
     /**
+     * Visits a DirectWheelsPrimitive to perform an operation.
+     *
+     * @param direct_wheels_primitive The DirectWheelsPrimitive to visit
+     */
+    void visit(const DirectWheelsPrimitive &direct_wheels_primtiive) override;
+
+    /**
      * Serializes the given KickPrimitive into a radio packet
      *
      * @param kick_primitive The KickPrimitive to simulate
@@ -60,6 +67,13 @@ class RadioPacketSerializerPrimitiveVisitor : public PrimitiveVisitor
      * @param move_primitive The MovePrimitive to simulate
      */
     void visit(const MovePrimitive &move_primitive) override;
+
+    /**
+     * Serializes the given MoveSpinPrimitive into a radio packet
+     *
+     * @param movespin_primitive The MoveSpinPrimitive to simulate
+     */
+    void visit(const MoveSpinPrimitive &movespin_primitive) override;
 
     /**
      * Serializes the given PivotPrimitive into a radio packet

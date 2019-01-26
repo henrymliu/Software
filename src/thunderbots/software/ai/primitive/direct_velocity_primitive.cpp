@@ -34,11 +34,6 @@ std::string DirectVelocityPrimitive::getPrimitiveName() const
     return PRIMITIVE_NAME;
 }
 
-PrimitiveType DirectVelocityPrimitive::getPrimitiveType() const
-{
-    return PrimitiveType::DIRECT_VELOCITY;
-}
-
 unsigned int DirectVelocityPrimitive::getRobotId() const
 {
     return robot_id;
@@ -62,19 +57,6 @@ double DirectVelocityPrimitive::getAngularVelocity() const
 double DirectVelocityPrimitive::getDribblerRpm() const
 {
     return dribbler_rpm;
-}
-
-std::vector<double> DirectVelocityPrimitive::getParameters() const
-{
-    std::vector<double> parameters = {x_velocity, y_velocity, angular_velocity,
-                                      dribbler_rpm};
-
-    return parameters;
-}
-
-std::vector<bool> DirectVelocityPrimitive::getExtraBits() const
-{
-    return std::vector<bool>();
 }
 
 void DirectVelocityPrimitive::accept(PrimitiveVisitor &visitor) const

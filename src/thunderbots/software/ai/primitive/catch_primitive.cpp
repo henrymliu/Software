@@ -28,11 +28,6 @@ std::string CatchPrimitive::getPrimitiveName() const
     return PRIMITIVE_NAME;
 }
 
-PrimitiveType CatchPrimitive::getPrimitiveType() const
-{
-    return PrimitiveType::CATCH;
-}
-
 unsigned int CatchPrimitive::getRobotId() const
 {
     return robot_id;
@@ -51,17 +46,6 @@ double CatchPrimitive::getDribblerSpeed() const
 double CatchPrimitive::getMargin() const
 {
     return margin;
-}
-
-std::vector<double> CatchPrimitive::getParameters() const
-{
-    std::vector<double> parameters = {velocity, dribbler_speed, margin};
-    return parameters;
-}
-
-std::vector<bool> CatchPrimitive::getExtraBits() const
-{
-    return std::vector<bool>();
 }
 
 void CatchPrimitive::accept(PrimitiveVisitor &visitor) const

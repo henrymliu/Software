@@ -30,11 +30,6 @@ std::string PivotPrimitive::getPrimitiveName() const
     return PRIMITIVE_NAME;
 }
 
-PrimitiveType PivotPrimitive::getPrimitiveType() const
-{
-    return PrimitiveType::PIVOT;
-}
-
 unsigned int PivotPrimitive::getRobotId() const
 {
     return robot_id;
@@ -53,18 +48,6 @@ Angle PivotPrimitive::getFinalAngle() const
 double PivotPrimitive::getPivotRadius() const
 {
     return pivot_radius;
-}
-
-std::vector<double> PivotPrimitive::getParameters() const
-{
-    std::vector<double> parameters = {pivot_point.x(), pivot_point.y(),
-                                      final_angle.toRadians(), pivot_radius};
-    return parameters;
-}
-
-std::vector<bool> PivotPrimitive::getExtraBits() const
-{
-    return std::vector<bool>();
 }
 
 void PivotPrimitive::accept(PrimitiveVisitor &visitor) const

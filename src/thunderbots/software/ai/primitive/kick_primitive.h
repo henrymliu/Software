@@ -36,8 +36,6 @@ class KickPrimitive : public Primitive
 
     std::string getPrimitiveName() const override;
 
-    PrimitiveType getPrimitiveType() const override;
-
     unsigned int getRobotId() const override;
     /**
      * Gets the location of where the kick will be taken
@@ -59,21 +57,6 @@ class KickPrimitive : public Primitive
      * @return The robot's kicking speed in m/s
      */
     double getKickSpeed() const;
-
-    /**
-     * Returns the generic vector of parameters for this Primitive
-     *
-     * @return A vector of the form: {kick_origin.x(), kick_origin.y(),
-     *                      kick_direction.toRadians(), kick_speed_meters_per_second};
-     */
-    std::vector<double> getParameters() const override;
-
-    /**
-     * This primitive has no extra bits
-     *
-     * @return an empty vector
-     */
-    std::vector<bool> getExtraBits() const override;
 
     void accept(PrimitiveVisitor &visitor) const override;
 

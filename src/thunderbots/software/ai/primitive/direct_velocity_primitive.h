@@ -35,8 +35,6 @@ class DirectVelocityPrimitive : public Primitive
 
     std::string getPrimitiveName() const override;
 
-    PrimitiveType getPrimitiveType() const override;
-
     unsigned int getRobotId() const override;
 
     double getXVelocity() const;
@@ -46,21 +44,6 @@ class DirectVelocityPrimitive : public Primitive
     double getAngularVelocity() const;
 
     double getDribblerRpm() const;
-
-    /**
-     * Returns the generic vector of parameters for this Primitive
-     *
-     * @return A vector of the form {x_velocity, y_velocity, angular_velocity,
-     *                                dribbler_rpm}
-     */
-    std::vector<double> getParameters() const override;
-
-    /**
-     * This primitive has no extra bits
-     *
-     * @return an empty vector
-     */
-    std::vector<bool> getExtraBits() const override;
 
     void accept(PrimitiveVisitor &visitor) const override;
 

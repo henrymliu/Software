@@ -43,8 +43,6 @@ class GrsimCommandPrimitiveVisitor : public PrimitiveVisitor
      */
     void visit(const DirectVelocityPrimitive &direct_velocity_primtiive) override;
 
-
-
     /**
      * Generates and stores the MotionControllerCommand the robot should perform at the
      * current moment in time in order to simulate the DirectWheelsPrimitive

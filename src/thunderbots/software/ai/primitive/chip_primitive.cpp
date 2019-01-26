@@ -31,12 +31,6 @@ std::string ChipPrimitive::getPrimitiveName() const
     return PRIMITIVE_NAME;
 }
 
-PrimitiveType ChipPrimitive::getPrimitiveType() const
-{
-    // In firmware, kick and chip are the same primitive.
-    return PrimitiveType::SHOOT;
-}
-
 unsigned int ChipPrimitive::getRobotId() const
 {
     return robot_id;
@@ -55,19 +49,6 @@ Angle ChipPrimitive::getChipDirection() const
 double ChipPrimitive::getChipDistance() const
 {
     return chip_distance_meters;
-}
-
-std::vector<double> ChipPrimitive::getParameters() const
-{
-    std::vector<double> parameters = {chip_origin.x(), chip_origin.y(),
-                                      chip_direction.toRadians(), chip_distance_meters};
-
-    return parameters;
-}
-
-std::vector<bool> ChipPrimitive::getExtraBits() const
-{
-    return std::vector<bool>();
 }
 
 void ChipPrimitive::accept(PrimitiveVisitor &visitor) const

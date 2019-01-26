@@ -35,6 +35,16 @@ void RadioPacketSerializerPrimitiveVisitor::visit(
     r_prim.extra_bits = 0;
 }
 
+void RadioPacketSerializerPrimitiveVisitor::visit(const DirectWheelsPrimitive &direct_wheels_primitive)
+{
+    r_prim.prim_type = PrimitiveType::DIRECT_WHEELS;
+    r_prim.param_array = {static_cast<double>(direct_wheels_primitive.getWheel0Power()),
+                          static_cast<double>(direct_wheels_primitive.getWheel1Power()),
+                          static_cast<double>(direct_wheels_primitive.getWheel2Power()),
+                          static_cast<double>(direct_wheels_primitive.getWheel3Power())};
+    r_prim.extra_bits = 0;
+}
+
 void RadioPacketSerializerPrimitiveVisitor::visit(const KickPrimitive &kick_primitive)
 {
     r_prim.prim_type = PrimitiveType::SHOOT;
@@ -57,6 +67,17 @@ void RadioPacketSerializerPrimitiveVisitor::visit(const MovePrimitive &move_prim
     r_prim.extra_bits = 0;
 }
 
+void RadioPacketSerializerPrimitiveVisitor::visit(const MoveSpinPrimitive &movespin_primitive)
+{
+
+    r_prim.prim_type = PrimitiveType::SPIN;
+    r_prim.param_array = {movespin_primitive.getDestination().x() * 1000,
+                        movespin_primitive.getDestination().y() * 1000,
+                        movespin_primitive.getAngularVelocity().toRadians() * 100,
+                        0};
+
+    r_prim.extra_bits = 0;
+}
 void RadioPacketSerializerPrimitiveVisitor::visit(const PivotPrimitive &pivot_primitive)
 {
     r_prim.prim_type = PrimitiveType::PIVOT;

@@ -36,8 +36,6 @@ class ChipPrimitive : public Primitive
 
     std::string getPrimitiveName() const override;
 
-    PrimitiveType getPrimitiveType() const override;
-
     unsigned int getRobotId() const override;
     /**
      * Gets the location of where the chip will be taken
@@ -60,21 +58,6 @@ class ChipPrimitive : public Primitive
      * @return The chipping distance in metres
      */
     double getChipDistance() const;
-
-    /**
-     * Returns the generic vector of parameters for this Primitive
-     *
-     * @return A vector of the form {chip_origin.x(), chip_origin.y(),
-     *                               chip_direction.toRadians(), chip_distance_meters}
-     */
-    std::vector<double> getParameters() const override;
-
-    /**
-     * This primitive has no extra bits
-     *
-     * @return an empty vector
-     */
-    std::vector<bool> getExtraBits() const override;
 
     void accept(PrimitiveVisitor &visitor) const override;
 
