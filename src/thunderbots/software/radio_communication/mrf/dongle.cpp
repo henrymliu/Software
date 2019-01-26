@@ -382,7 +382,7 @@ void MRFDongle::handle_mdrs(AsyncOperation<void> &op)
 }
 
 // TODO see #222
-void MRFDongle::hadle_message(AsyncOperation<void> &, USB::BulkInTransfer &transfer)
+void MRFDongle::handle_message(AsyncOperation<void> &, USB::BulkInTransfer &transfer)
 {
     transfer.result();
     // if (transfer.size() > 2)
@@ -515,7 +515,7 @@ void MRFDongle::send_camera_packet(std::vector<std::tuple<uint8_t, Point, Angle>
 void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>> &prims)
 {
     std::size_t num_prims = prims.size();
-    if (num_prims >= MAX_ROBOT_ID)
+    if (num_prims >= MAX_ROBOTS)
     {
         throw std::invalid_argument("Too many primitives in vector.");
     }
@@ -547,11 +547,6 @@ void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>>
                 encode_primitive(prims[i], &drive_packet[drive_packet_length]);
                 drive_packet_length += 8;
             }
-        }
-        else
-        {
-            // Too many robots
-            throw std::invalid_argument("Too many primitives in vector");
         }
 
         submit_drive_transfer();
