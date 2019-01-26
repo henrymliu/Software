@@ -27,6 +27,7 @@ fi
 
 # Add user to dialout group for USB comms
 sudo adduser $USER dialout
+
 echo "================================================================"
 echo "Done"
 echo ""
