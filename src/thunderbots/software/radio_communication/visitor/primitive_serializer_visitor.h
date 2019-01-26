@@ -2,6 +2,18 @@
 
 #include "ai/primitive/visitor/primitive_visitor.h"
 
+class RadioPrimitive
+{
+public:
+    // A numeric ID representing the primitive for firmware
+    PrimitiveType prim_type;
+
+    // The parameter array to be encoded into the radio packet
+    std::vector<double> param_array;
+
+    // Extra bits
+    uint8_t extra_bits;
+};
 /**
  * This class implements a Visitor that serializes the Primitive classes into packets
  * that can be send over the radio to the physical robots
@@ -54,7 +66,14 @@ class RadioPacketSerializerPrimitiveVisitor : public PrimitiveVisitor
      *
      * @param pivot_primitive The PivotPrimitive to simulate
      */
-    void visit(const PivotPrimitive &pivot_primtiive) override;
+    void visit(const PivotPrimitive &pivot_primitive) override;
+
+    /**
+     * Serializes the given StopPrimitive into a radio packet
+     *
+     * @param stop_primitive The StopPrimitive to simulate
+     */
+    void visit(const StopPrimitive &stop_primitive) override;
 
     /**
      * Returns the most recent serialized packet created by this
@@ -67,11 +86,9 @@ class RadioPacketSerializerPrimitiveVisitor : public PrimitiveVisitor
      * @return The most recent serialized packet created by this
      * RadioPacketSerializerPrimitiveVisitor
      */
-    uint64_t getSerializedRadioPacket();
+    RadioPrimitive getSerializedRadioPacket();
 
    private:
-    // The serialzed data encoded to tbe sent to the robots over radio
-    // TODO: This may not be the type actually required for the radio
-    // See: https://github.com/UBC-Thunderbots/Software/issues/63
-    uint64_t radio_packet;
+
+    RadioPrimitive r_prim;
 };

@@ -21,6 +21,7 @@
 #include <unordered_map>
 
 #include "constants.h"
+#include "radio_communication/visitor/primitive_serializer_visitor.h"
 
 namespace
 {
@@ -572,11 +573,16 @@ bool MRFDongle::submit_drive_transfer()
 void MRFDongle::encode_primitive(const std::unique_ptr<Primitive> &prim, void *out)
 {
     uint16_t words[4];
+    RadioPacketSerializerPrimitiveVisitor visitor = RadioPacketSerializerPrimitiveVisitor();
+
+    // Visit the primitive.
+    prim->accept(visitor);
+    RadioPrimitive r_prim = visitor.getSerializedRadioPacket();
 
     // Encode the parameter words.
-    for (std::size_t i = 0; i < prim->getParameters().size(); ++i)
+    for (std::size_t i = 0; i < r_prim.param_array.size(); ++i)
     {
-        double value = prim->getParameters()[i];
+        double value = r_prim.param_array[i];
         switch (std::fpclassify(value))
         {
             case FP_NAN:
@@ -613,7 +619,7 @@ void MRFDongle::encode_primitive(const std::unique_ptr<Primitive> &prim, void *o
 
     // Encode the movement primitive number.
     words[0] = static_cast<uint16_t>(
-        words[0] | static_cast<unsigned int>(prim->getPrimitiveType()) << 12);
+        words[0] | static_cast<unsigned int>(r_prim.prim_type) << 12);
 
     // Encode the charger state. TODO add this (#223)
     // switch (charger_state)
@@ -630,16 +636,12 @@ void MRFDongle::encode_primitive(const std::unique_ptr<Primitive> &prim, void *o
     words[1] |= 1 << 14;  // Discharged for now
 
     // Encode extra data plus the slow flag.
-    // TODO convert boolean array to int here
+    // TODO: do we actually use the slow flag?
+    uint8_t extra = r_prim.extra_bits;
+    bool slow = false;
+    assert(extra <= 127);
+    uint8_t extra_encoded = static_cast<uint8_t>(extra | (slow ? 0x80 : 0x00));
 
-    // assert(extra <= 127);
-    // uint8_t extra_encoded = static_cast<uint8_t>(extra | (slow ? 0x80 : 0x00));
-    uint8_t extra_encoded = 0;
-    // for (int i = 0; i < 8; ++i)
-    // {
-    //     extra_encoded |= prim->getExtraBitArray()[i] << i;
-    // }
-    // printf("Extra encoded: %u\n", extra_encoded);
     words[2] = static_cast<uint16_t>(words[2] |
                                      static_cast<uint16_t>((extra_encoded & 0xF) << 12));
     words[3] = static_cast<uint16_t>(words[3] |
