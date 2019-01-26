@@ -134,8 +134,7 @@ MRFDongle::SendReliableMessageOperation::ClearChannelError::ClearChannelError()
 }
 
 MRFDongle::MRFDongle()
-    :  // logger(nullptr),
-      context(),
+    : context(),
       device(context, MRF::VENDOR_ID, MRF::PRODUCT_ID, std::getenv("MRF_SERIAL")),
       radio_interface(-1),
       configuration_altsetting(-1),
@@ -289,12 +288,6 @@ MRFDongle::MRFDongle()
     // Switch to normal mode.
     device.set_interface_alt_setting(radio_interface, normal_altsetting);
 
-    // Create the robots. TODO: something to do for the backend input
-    for (unsigned int i = 0; i < 8; ++i)
-    {
-        // robots[i].reset(new MRFRobot(*this, i));
-    }
-
     // Prepare the available message IDs for allocation.
     for (unsigned int i = 0; i < 256; ++i)
     {
@@ -382,19 +375,14 @@ void MRFDongle::handle_mdrs(AsyncOperation<void> &op)
     }
     for (unsigned int i = 0; i < mdr_transfer.size(); i += 2)
     {
-        // if (logger)
-        // {
-        //     logger->log_mrf_mdr(
-        //         mdr_transfer.data()[i], mdr_transfer.data()[i + 1]);
-        // }
         signal_message_delivery_report.emit(mdr_transfer.data()[i],
                                             mdr_transfer.data()[i + 1]);
     }
     mdr_transfer.submit();
 }
 
-// TODO: backend_input should handle this
-void MRFDongle::handle_message(AsyncOperation<void> &, USB::BulkInTransfer &transfer)
+// TODO see #222
+void MRFDongle::hadle_message(AsyncOperation<void> &, USB::BulkInTransfer &transfer)
 {
     transfer.result();
     // if (transfer.size() > 2)
@@ -479,6 +467,7 @@ void MRFDongle::send_camera_packet(std::vector<std::tuple<uint8_t, Point, Angle>
         *rptr++ = static_cast<int8_t>(robotT);
         *rptr++ = static_cast<int8_t>(robotT >> 8);
 
+        /* This was here when I ported the code, no idea what this is for */
         //*rptr = ((int16_t)(std::get<1>(detbots[i])).x) +
         //((int16_t)((std::get<1>(detbots[i])).y) << 16) +
         //((int16_t)((std::get<2>(detbots[i])).to_radians() * 1000) << 32);
@@ -559,8 +548,9 @@ void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>>
                 drive_packet_length += 8;
             }
         }
-        else 
+        else
         {
+            // Too many robots
             throw std::invalid_argument("Too many primitives in vector");
         }
 
@@ -630,7 +620,7 @@ void MRFDongle::encode_primitive(const std::unique_ptr<Primitive> &prim, void *o
     words[0] = static_cast<uint16_t>(
         words[0] | static_cast<unsigned int>(prim->getPrimitiveType()) << 12);
 
-    // Encode the charger state. TODO add this
+    // Encode the charger state. TODO add this (#223)
     // switch (charger_state)
     // {
     //     case ChargerState::DISCHARGE:
