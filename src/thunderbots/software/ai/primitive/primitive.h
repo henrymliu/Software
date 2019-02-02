@@ -1,12 +1,12 @@
 #pragma once
 
 #include <ros/ros.h>
+#include <shared/primitive_type.h>
 
 #include <string>
 #include <vector>
 
 #include "thunderbots_msgs/Primitive.h"
-#include <shared/primitive_type.h>
 
 // We forward-declare the PrimitiveVisitor interface (pure virtual class) because we need
 // to know about the existence of this class in order to accept visitors with the

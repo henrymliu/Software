@@ -1,8 +1,5 @@
 #include "dongle.h"
 
-#include <glibmm/convert.h>
-#include <glibmm/main.h>
-#include <glibmm/ustring.h>
 #include <sigc++/bind.h>
 #include <sigc++/functors/mem_fun.h>
 #include <sigc++/reference_wrapper.h>
@@ -57,78 +54,6 @@ namespace
         return ptr;
     }
 }  // namespace
-
-MRFDongle::SendReliableMessageOperation::SendReliableMessageOperation(MRFDongle &dongle,
-                                                                      unsigned int robot,
-                                                                      unsigned int tries,
-                                                                      const void *data,
-                                                                      std::size_t length)
-    : dongle(dongle),
-      message_id(dongle.alloc_message_id()),
-      delivery_status(0xFF),
-      transfer(create_reliable_message_transfer(dongle.device, robot, message_id, tries,
-                                                data, length))
-{
-
-    transfer->signal_done.connect(
-        sigc::mem_fun(this, &SendReliableMessageOperation::out_transfer_done));
-    transfer->submit();
-    mdr_connection = dongle.signal_message_delivery_report.connect(
-        sigc::mem_fun(this, &SendReliableMessageOperation::message_delivery_report));
-}
-
-void MRFDongle::SendReliableMessageOperation::result() const
-{
-    transfer->result();
-    switch (delivery_status)
-    {
-        case MRF::MDR_STATUS_OK:
-            break;
-        case MRF::MDR_STATUS_NOT_ASSOCIATED:
-            throw NotAssociatedError();
-        case MRF::MDR_STATUS_NOT_ACKNOWLEDGED:
-            throw NotAcknowledgedError();
-        case MRF::MDR_STATUS_NO_CLEAR_CHANNEL:
-            throw ClearChannelError();
-        default:
-            throw std::logic_error("Unknown delivery status");
-    }
-}
-
-void MRFDongle::SendReliableMessageOperation::out_transfer_done(AsyncOperation &op)
-{
-    if (!op.succeeded())
-    {
-        signal_done.emit(*this);
-    }
-}
-
-void MRFDongle::SendReliableMessageOperation::message_delivery_report(uint8_t id,
-                                                                      uint8_t code)
-{
-    if (id == message_id)
-    {
-        mdr_connection.disconnect();
-        delivery_status = code;
-        dongle.free_message_id(message_id);
-        signal_done.emit(*this);
-    }
-}
-
-MRFDongle::SendReliableMessageOperation::NotAssociatedError::NotAssociatedError()
-    : std::runtime_error("Message sent to robot that is not associated")
-{
-}
-
-MRFDongle::SendReliableMessageOperation::NotAcknowledgedError::NotAcknowledgedError()
-    : std::runtime_error("Message sent to robot not acknowledged")
-{
-}
-
-MRFDongle::SendReliableMessageOperation::ClearChannelError::ClearChannelError()
-    : std::runtime_error("Message sent to robot failed to find clear channel")
-{
-}
 
 MRFDongle::MRFDongle()
     : context(),
@@ -341,11 +266,6 @@ void MRFDongle::beep(unsigned int length)
     }
 }
 
-// void MRFDongle::log_to(MRFPacketLogger &logger)
-// {
-//     this->logger = &logger;
-// }
-
 uint8_t MRFDongle::alloc_message_id()
 {
     if (free_message_ids.empty())
@@ -400,6 +320,7 @@ void MRFDongle::handle_message(AsyncOperation<void> &, USB::BulkInTransfer &tran
     transfer.submit();
 }
 
+// TODO #222
 void MRFDongle::handle_status(AsyncOperation<void> &)
 {
     status_transfer.result();
@@ -509,10 +430,10 @@ void MRFDongle::send_camera_packet(std::vector<std::tuple<uint8_t, Point, Angle>
               << std::endl;
 };
 
-void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>> &prims)
+void MRFDongle::send_drive_packet(const std::vector<std::unique_ptr<Primitive>> &prims)
 {
     std::size_t num_prims = prims.size();
-    if (num_prims >= MAX_ROBOTS)
+    if (num_prims > MAX_ROBOTS)
     {
         throw std::invalid_argument("Too many primitives in vector.");
     }
@@ -537,8 +458,6 @@ void MRFDongle::build_drive_packet(const std::vector<std::unique_ptr<Primitive>>
             drive_packet_length = 0;
             for (std::size_t i = 0; i != num_prims; ++i)
             {
-                // std::cout << "encoding drive packet for bot: " <<
-                // prims[i]->getRobotId() << std::endl;
                 drive_packet[drive_packet_length++] =
                     static_cast<uint8_t>(prims[i]->getRobotId());
                 encode_primitive(prims[i], &drive_packet[drive_packet_length]);
@@ -569,7 +488,8 @@ bool MRFDongle::submit_drive_transfer()
 void MRFDongle::encode_primitive(const std::unique_ptr<Primitive> &prim, void *out)
 {
     uint16_t words[4];
-    RadioPacketSerializerPrimitiveVisitor visitor = RadioPacketSerializerPrimitiveVisitor();
+    RadioPacketSerializerPrimitiveVisitor visitor =
+        RadioPacketSerializerPrimitiveVisitor();
 
     // Visit the primitive.
     prim->accept(visitor);
@@ -614,8 +534,8 @@ void MRFDongle::encode_primitive(const std::unique_ptr<Primitive> &prim, void *o
     }
 
     // Encode the movement primitive number.
-    words[0] = static_cast<uint16_t>(
-        words[0] | static_cast<unsigned int>(r_prim.prim_type) << 12);
+    words[0] = static_cast<uint16_t>(words[0] |
+                                     static_cast<unsigned int>(r_prim.prim_type) << 12);
 
     // Encode the charger state. TODO add this (#223)
     // switch (charger_state)
@@ -634,7 +554,7 @@ void MRFDongle::encode_primitive(const std::unique_ptr<Primitive> &prim, void *o
     // Encode extra data plus the slow flag.
     // TODO: do we actually use the slow flag?
     uint8_t extra = r_prim.extra_bits;
-    bool slow = false;
+    bool slow     = false;
     assert(extra <= 127);
     uint8_t extra_encoded = static_cast<uint8_t>(extra | (slow ? 0x80 : 0x00));
 
@@ -657,16 +577,6 @@ void MRFDongle::handle_drive_transfer_done(AsyncOperation<void> &op)
     std::cout << "Drive Transfer done" << std::endl;
     op.result();
     drive_transfer.reset();
-
-    // TODO: handle what happens if transfer did not complete???
-    // if (std::find_if(
-    //         robots, robots + sizeof(robots) / sizeof(*robots),
-    //         [](const std::unique_ptr<MRFRobot> &bot) {
-    //             return bot->drive_dirty;
-    //         }) != robots + sizeof(robots) / sizeof(*robots))
-    // {
-    //     submit_drive_transfer();
-    // }
 }
 
 void MRFDongle::handle_camera_transfer_done(
@@ -682,8 +592,8 @@ void MRFDongle::handle_camera_transfer_done(
     uint64_t stamp = static_cast<uint64_t>(micros.count());
 
     std::lock_guard<std::mutex> lock(cam_mtx);
-    std::cout << "Camera transfer done, took: " << stamp - (*iter).second <<
-    " microseconds" << std::endl;
+    std::cout << "Camera transfer done, took: " << stamp - (*iter).second
+              << " microseconds" << std::endl;
     (*iter).first->result();
     camera_transfers.erase(iter);
 }
@@ -691,7 +601,6 @@ void MRFDongle::handle_camera_transfer_done(
 void MRFDongle::send_unreliable(unsigned int robot, unsigned int tries, const void *data,
                                 std::size_t len)
 {
-    std::cout << "sending unreliable packet" << std::endl;
     assert(robot < 8);
     assert((1 <= tries) && (tries <= 256));
     uint8_t buffer[len + 2];

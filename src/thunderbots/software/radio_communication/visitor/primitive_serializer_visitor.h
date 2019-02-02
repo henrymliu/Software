@@ -4,7 +4,7 @@
 
 class RadioPrimitive
 {
-public:
+   public:
     // A numeric ID representing the primitive for firmware
     PrimitiveType prim_type;
 
@@ -103,6 +103,5 @@ class RadioPacketSerializerPrimitiveVisitor : public PrimitiveVisitor
     RadioPrimitive getSerializedRadioPacket();
 
    private:
-
     RadioPrimitive r_prim;
 };

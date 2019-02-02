@@ -25,8 +25,8 @@ namespace
     // the Primitives in grSim
     std::vector<std::unique_ptr<Primitive>> primitives;
 
-    MRFDongle dongle                        = MRFDongle();
-    MrfBackend backend                      = MrfBackend(dongle);
+    MRFDongle dongle   = MRFDongle();
+    MrfBackend backend = MrfBackend(dongle);
     Team friendly_team = Team(std::chrono::milliseconds(1000));
 
 }  // namespace
@@ -77,8 +77,6 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "radio_communication");
     ros::NodeHandle node_handle;
 
-    ros::Rate tick_rate(60);
-
     // Create subscribers to topics we care about
     ros::Subscriber prim_array_sub = node_handle.subscribe(
         Util::Constants::AI_PRIMITIVES_TOPIC, 1, primitiveUpdateCallback);
@@ -102,8 +100,8 @@ int main(int argc, char** argv)
 
         for (unsigned i = 0; i <= 7; ++i)
         {
-            primitives.emplace_back(
-                std::make_unique<MovePrimitive>(i, Point(-1, -2 + (i / 2.0)), Angle::ofDegrees(200), 0));
+            primitives.emplace_back(std::make_unique<MovePrimitive>(
+                i, Point(-1, -2 + (i / 2.0)), Angle::ofDegrees(200), 0));
         }
 
         // Send primitives
@@ -115,7 +113,6 @@ int main(int argc, char** argv)
         // Spin once to let all necessary callbacks run
         // The callbacks will populate the primitives vector
         ros::spinOnce();
-        tick_rate.sleep();
     }
 
     return 0;

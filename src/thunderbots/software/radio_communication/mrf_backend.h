@@ -20,8 +20,7 @@ class MrfBackend
      *
      * @param primitives the list of primitives to send
      */
-    void sendPrimitives(
-        const std::vector<std::unique_ptr<Primitive>>& primitives);
+    void sendPrimitives(const std::vector<std::unique_ptr<Primitive>>& primitives);
 
     void update_detbots(std::vector<std::tuple<uint8_t, Point, Angle>> ft);
     void update_ball(Ball b);
