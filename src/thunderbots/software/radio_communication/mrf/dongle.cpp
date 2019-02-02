@@ -69,11 +69,7 @@ MRFDongle::SendReliableMessageOperation::SendReliableMessageOperation(MRFDongle 
       transfer(create_reliable_message_transfer(dongle.device, robot, message_id, tries,
                                                 data, length))
 {
-    // if (dongle.logger)
-    // {
-    //     dongle.logger->log_mrf_message_out(
-    //         robot, true, message_id, data, length);
-    // }
+
     transfer->signal_done.connect(
         sigc::mem_fun(this, &SendReliableMessageOperation::out_transfer_done));
     transfer->submit();
@@ -319,7 +315,7 @@ MRFDongle::MRFDongle()
 
 void MRFDongle::handle_libusb_events()
 {
-    context.handle_usb_fds();
+    context.handle_usb_events();
 }
 
 MRFDongle::~MRFDongle()
