@@ -10,6 +10,11 @@
 #include <thread>
 
 #include "ai/primitive/move_primitive.h"
+#include "ai/primitive/pivot_primitive.h"
+#include "ai/primitive/movespin_primitive.h"
+#include "ai/primitive/kick_primitive.h"
+#include "ai/primitive/chip_primitive.h"
+#include "ai/primitive/catch_primitive.h"
 #include "ai/primitive/primitive.h"
 #include "geom/point.h"
 #include "mrf_backend.h"
@@ -28,6 +33,7 @@ namespace
     MRFDongle dongle   = MRFDongle();
     MrfBackend backend = MrfBackend(dongle);
     Team friendly_team = Team(std::chrono::milliseconds(1000));
+    Ball ball(Point(-2,0), Vector(0,0));
 
 }  // namespace
 
@@ -45,7 +51,7 @@ void ballUpdateCallback(const thunderbots_msgs::Ball::ConstPtr& msg)
 {
     thunderbots_msgs::Ball ball_msg = *msg;
 
-    Ball ball = Util::ROSMessages::createBallFromROSMessage(ball_msg);
+    ball = Util::ROSMessages::createBallFromROSMessage(ball_msg);
     backend.update_ball(ball);
 
     // Send vision packet
@@ -98,12 +104,21 @@ int main(int argc, char** argv)
         // Clear all primitives each tick
         primitives.clear();
 
-        for (unsigned i = 0; i <= 7; ++i)
-        {
-            primitives.emplace_back(std::make_unique<MovePrimitive>(
-                i, Point(-1, -2 + (i / 2.0)), Angle::ofDegrees(200), 0));
-        }
+        // for (unsigned i = 0; i <= 7; ++i)
+        // {
+        //     primitives.emplace_back(std::make_unique<MovePrimitive>(
+        //         i, Point(-2, -2 + (i / 2.0)), Angle::ofDegrees(200), 0));
+        // }
 
+        // primitives.emplace_back(std::make_unique<KickPrimitive>(
+        //     0, ball.position(), Angle::ofDegrees(180), 8));
+        // primitives.emplace_back(std::make_unique<MoveSpinPrimitive>(
+        //     0, Point(-2, 0), Angle::ofDegrees(9000)));
+        // primitives.emplace_back(std::make_unique<CatchPrimitive>(0, 0.1, 12000, 0.5));
+        // primitives.emplace_back(std::make_unique<PivotPrimitive>(
+        //     0, Point(-2, 0), Angle::ofDegrees(300), 0.5));
+        primitives.emplace_back(std::make_unique<ChipPrimitive>(
+            0, ball.position(), Angle::ofDegrees(180), 3));
         // Send primitives
         backend.sendPrimitives(primitives);
 

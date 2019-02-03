@@ -39,6 +39,8 @@ void MrfBackend::send_vision_packet()
         std::cout << "time capture = " << timestamp << ", ";
         std::cout << "theta = " << (std::get<2>(detbots[i])).toDegrees() << std::endl;
     }
+    std::cout << "ball x = " << ball.position().x() << ", ";
+    std::cout << "ball y = " << ball.position().y() << std::endl;
 
     dongle.send_camera_packet(detbots, ball.position() * 1000, timestamp);
 }

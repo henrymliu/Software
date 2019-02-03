@@ -92,6 +92,11 @@ int main(int argc, char** argv)
             auto ssl_vision_packet = ssl_vision_packet_queue.front();
             ssl_vision_packet_queue.pop();
 
+            // #warning HACK
+            if(ssl_vision_packet.detection().camera_id() != 0) {
+                continue;
+            }
+
             std::optional<thunderbots_msgs::Field> field_msg =
                 backend.getFieldMsg(ssl_vision_packet);
             if (field_msg)

@@ -9,7 +9,7 @@ void RadioPacketSerializerPrimitiveVisitor::visit(const CatchPrimitive &catch_pr
 {
     r_prim.prim_type   = PrimitiveType::CATCH;
     r_prim.param_array = {catch_primitive.getVelocity() * 1000,
-                          catch_primitive.getDribblerSpeed(),  // TODO eh?
+                          catch_primitive.getDribblerSpeed(),  // TODO are these the right units?
                           catch_primitive.getMargin()};
     r_prim.extra_bits  = 0;
 }
