@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <test/ai/hl/stp/test_plays/halt_test_play.h>
 #include <test/ai/hl/stp/test_tactics/move_test_tactic.h>
 #include <test/ai/hl/stp/test_tactics/stop_test_tactic.h>
 
@@ -15,11 +16,17 @@
 
 class STPTacticAssignmentTest : public ::testing::Test
 {
+   public:
+    STPTacticAssignmentTest() : stp([]() { return nullptr; }, 0) {}
+
    protected:
     void SetUp() override
     {
+        auto default_play_constructor = []() -> std::unique_ptr<Play> {
+            return std::make_unique<HaltTestPlay>();
+        };
         // Give an explicit seed to STP so that our tests are deterministic
-        stp   = STP(0);
+        stp   = STP(default_play_constructor, 0);
         world = ::Test::TestUtil::createBlankTestingWorld();
     }
 
@@ -349,4 +356,32 @@ TEST_F(STPTacticAssignmentTest,
     EXPECT_EQ(assigned_tactics.at(0)->getAssignedRobot(), robot_2);
     EXPECT_EQ(assigned_tactics.at(1)->getAssignedRobot(), robot_0);
     EXPECT_EQ(assigned_tactics.at(2)->getAssignedRobot(), robot_1);
+}
+
+TEST_F(STPTacticAssignmentTest,
+       test_assigning_2_robots_to_1_tactic_unsatisfied_robotcapabilityflags)
+{
+    // test that the robot that matches capability requirements is selected over the robot
+    // that doesn't even though the former has lower cost
+    Team friendly_team(Duration::fromSeconds(0));
+    // this robot has no capabilities
+    Robot robot_0(0, Point(0.1, 0.1), Point(), Angle::zero(), AngularVelocity::zero(),
+                  Timestamp::fromSeconds(0), 10, RobotCapabilityFlags{});
+    // default is all capabilities, if not specified otherwise
+    Robot robot_1(1, Point(-10, -10), Point(), Angle::zero(), AngularVelocity::zero(),
+                  Timestamp::fromSeconds(0));
+    friendly_team.updateRobots({robot_0, robot_1});
+    world.updateFriendlyTeamState(friendly_team);
+
+    auto move_tactic_1 = std::make_shared<MoveTestTactic>();
+
+    move_tactic_1->updateParams(Point(0, 0));
+
+    std::vector<std::shared_ptr<Tactic>> tactics = {move_tactic_1};
+
+
+    auto assigned_tactics = stp.assignRobotsToTactics(world, tactics);
+
+    EXPECT_EQ(assigned_tactics.size(), 1);
+    EXPECT_EQ(assigned_tactics.at(0)->getAssignedRobot(), robot_1);
 }

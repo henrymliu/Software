@@ -228,6 +228,8 @@ namespace Util
          */
         void drawRobot(Robot robot, Color color);
 
+        void drawRobotPath(std::vector<Point> path_points);
+
        private:
         /**
          * Union used to convert a int16_t into two uint8_t
@@ -254,8 +256,8 @@ namespace Util
         static constexpr Color DEFENSE_AREA_COLOR  = {242, 242, 242, 255};
         static constexpr Color FIELD_LINE_COLOR    = {242, 242, 242, 255};
         static constexpr Color BALL_COLOR          = {255, 153, 0, 255};
-        static constexpr Color FRIENDLY_TEAM_COLOR = {230, 230, 0, 255};
-        static constexpr Color ENEMY_TEAM_COLOR    = {0, 230, 230, 255};
+        static constexpr Color FRIENDLY_TEAM_COLOR = {0, 230, 0, 255};
+        static constexpr Color ENEMY_TEAM_COLOR    = {230, 0, 0, 255};
 
         /**
          * Constructor; initializes an empty layers map then populates it

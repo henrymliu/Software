@@ -3,16 +3,15 @@
 #include "ai/hl/stp/play/play.h"
 
 /**
- * This Play moves our robots in a formation while keeping them at least 0.5m from the
- * ball. Additionally, the robots are limited to moving no more than 1.5m/s. This Play is
- * used during the referee "Stop" command.
+ * A play that runs when its currently the friendly kick off,
+ * only one robot grabs the ball and passes to another robot.
  */
-class StopPlay : public Play
+class KickoffFriendlyPlay : public Play
 {
    public:
     static const std::string name;
 
-    StopPlay() = default;
+    KickoffFriendlyPlay() = default;
 
     std::string getName() const override;
 

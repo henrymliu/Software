@@ -18,10 +18,12 @@ AI:
     options:
         - "Example Play"
         - "Stop Play"
+        - "Halt Play"
         - "Corner Kick Play"
         - "Defense Play"
         - "KickoffEnemy Play"
-    description: >-
+        - "KickoffFriendly Play"
+    description: >- 
         Specifies the ai play that should be in use
   refbox:
     override_refbox_play:
@@ -48,13 +50,27 @@ AI:
           Positive if selected, Negative if unselected
     override_refbox_friendly_team_color:
       type: "bool"
-      default: false
+      default: true
       description: >-
           Overrides the team color provided by refbox, 
           with friendly_color_yellow parameter
     friendly_color_yellow:
       type: "bool"
-      default: false
+      default: true
       description: >-
           Yellow if selected, Blue if unselected
+    friendly_goalie_id:
+      type: "int"
+      min: 0
+      max: 16
+      default: 0
+      description: >-
+        The id of the friendly goalie
+    enemy_goalie_id:
+      type: "int"
+      min: 0
+      max: 16
+      default: 0
+      description: >-
+        The id of the enemy goalie
 

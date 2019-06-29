@@ -3,29 +3,34 @@
 #include "ai/hl/stp/tactic/tactic.h"
 
 /**
- * A test Tactic used for unit tests
- *
- * Moves the assigned robot to the given destination
+ * The ChipTactic will move the assigned robot to the given chip origin and then
+ * chip the ball to the chip target.
  */
-class MoveTestTactic : public Tactic
+
+class ChipTactic : public Tactic
 {
    public:
     /**
-     * Creates a new MoveTestTactic
+     * Creates a new ChipTactic
      *
      * @param loop_forever Whether or not this Tactic should never complete. If true, the
      * tactic will be restarted every time it completes
      */
-    explicit MoveTestTactic(bool loop_forever = false);
+    explicit ChipTactic(const Ball& ball, bool loop_forever = false);
 
     std::string getName() const override;
 
     /**
-     * Updates the parameters for this MoveTestTactic.
+     * Updates the parameters for this ChipTactic.
      *
-     * @param destination_ The destination to move to (in global coordinates)
+     * @param ball The ball being kicked
+     * @param chip_origin The location where the chip will be taken
+     * @param chip_direction The direction the Robot will chip in
+     * @param chip_distance_meters The distance between the starting location
+     * of the chip and the location of the first bounce
      */
-    void updateParams(Point destination_);
+    void updateParams(const Ball& ball, Point chip_origin, Point chip_target,
+                      double chip_distance_meters);
 
     /**
      * Calculates the cost of assigning the given robot to this Tactic. Prefers robots
@@ -42,6 +47,8 @@ class MoveTestTactic : public Tactic
     void calculateNextIntent(IntentCoroutine::push_type& yield) override;
 
     // Tactic parameters
-    // The point the robot is trying to move to
-    Point destination;
+    Ball ball;
+    Point chip_origin;
+    Point chip_target;
+    double chip_distance_meters;
 };
