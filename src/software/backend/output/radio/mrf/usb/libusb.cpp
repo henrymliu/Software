@@ -33,7 +33,7 @@ USB::Context::Context()
         while (running)
             libusb_handle_events(context);
 
-        LOG(DEBUG) << "Event thread exiting";
+        LOG(DBUG) << "Event thread exiting";
     });
 }
 
@@ -55,7 +55,7 @@ USB::Context::~Context()
     libusb_exit(context);
     context = nullptr;
 
-    LOG(DEBUG) << "Context destroyed";
+    LOG(DBUG) << "Context destroyed";
 }
 
 USB::ConfigurationSetter::ConfigurationSetter(DeviceHandle &device, int configuration)

@@ -119,7 +119,7 @@ void CornerKickPlay::getNextTactics(TacticCoroutine::push_type &yield)
     // Wait for a robot to be assigned to align to take the corner
     while (!align_to_ball_tactic->getAssignedRobot())
     {
-        LOG(DEBUG) << "Nothing assigned to align to ball yet";
+        LOG(DBUG) << "Nothing assigned to align to ball yet";
         updateAlignToBallTactic(align_to_ball_tactic);
         updateCherryPickTactics({cherry_pick_tactic_pos_y, cherry_pick_tactic_neg_y});
         updatePassGenerator(pass_generator);
@@ -131,11 +131,11 @@ void CornerKickPlay::getNextTactics(TacticCoroutine::push_type &yield)
 
     // Set the passer on the pass generator
     pass_generator.setPasserRobotId(align_to_ball_tactic->getAssignedRobot()->id());
-    LOG(DEBUG) << "Aligning with robot " << align_to_ball_tactic->getAssignedRobot()->id()
+    LOG(DBUG) << "Aligning with robot " << align_to_ball_tactic->getAssignedRobot()->id()
                << "as the passer";
 
     // Put the robot in roughly the right position to perform the kick
-    LOG(DEBUG) << "Aligning to ball";
+    LOG(DBUG) << "Aligning to ball";
     do
     {
         updateAlignToBallTactic(align_to_ball_tactic);
@@ -145,7 +145,7 @@ void CornerKickPlay::getNextTactics(TacticCoroutine::push_type &yield)
                bait_move_tactic_1, bait_move_tactic_2});
     } while (!align_to_ball_tactic->done());
 
-    LOG(DEBUG) << "Finished aligning to ball";
+    LOG(DBUG) << "Finished aligning to ball";
 
     // Align the kicker to take the corner kick and wait for a good pass
     // To get the best pass possible we start by aiming for a perfect one and then
@@ -162,8 +162,8 @@ void CornerKickPlay::getNextTactics(TacticCoroutine::push_type &yield)
                bait_move_tactic_1, bait_move_tactic_2});
 
         best_pass_and_score_so_far = pass_generator.getBestPassSoFar();
-        LOG(DEBUG) << "Best pass found so far is: " << best_pass_and_score_so_far.pass;
-        LOG(DEBUG) << "    with score: " << best_pass_and_score_so_far.rating;
+        LOG(DBUG) << "Best pass found so far is: " << best_pass_and_score_so_far.pass;
+        LOG(DBUG) << "    with score: " << best_pass_and_score_so_far.rating;
 
         Duration time_since_commit_stage_start =
             world.getMostRecentTimestamp() - commit_stage_start_time;
@@ -175,8 +175,8 @@ void CornerKickPlay::getNextTactics(TacticCoroutine::push_type &yield)
     // Commit to a pass
     Pass pass = best_pass_and_score_so_far.pass;
 
-    LOG(DEBUG) << "Committing to pass: " << best_pass_and_score_so_far.pass;
-    LOG(DEBUG) << "Score of pass we committed to: " << best_pass_and_score_so_far.rating;
+    LOG(DBUG) << "Committing to pass: " << best_pass_and_score_so_far.pass;
+    LOG(DBUG) << "Score of pass we committed to: " << best_pass_and_score_so_far.rating;
 
     // Destruct the PassGenerator and CherryPick tactics (which contain a PassGenerator
     // each) to save a significant number of CPU cycles
@@ -198,7 +198,7 @@ void CornerKickPlay::getNextTactics(TacticCoroutine::push_type &yield)
         yield({passer, receiver, bait_move_tactic_1, bait_move_tactic_2});
     } while (!receiver->done());
 
-    LOG(DEBUG) << "Finished";
+    LOG(DBUG) << "Finished";
 }
 
 void CornerKickPlay::updateCherryPickTactics(

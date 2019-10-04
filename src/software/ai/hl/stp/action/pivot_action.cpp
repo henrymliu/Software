@@ -40,7 +40,7 @@ void PivotAction::calculateNextIntent(IntentCoroutine::push_type& yield)
             yield(std::make_unique<MoveIntent>(
                 robot->id(), pivot_point, (pivot_point - robot->position()).orientation(),
                 0.0, 0, enable_dribbler));
-            LOG(DEBUG) << "obtaining ball, moving!";
+            LOG(DBUG) << "obtaining ball, moving!";
         }
         else
         {
@@ -51,7 +51,7 @@ void PivotAction::calculateNextIntent(IntentCoroutine::push_type& yield)
             if (robot->orientation() >= (final_angle - threshold_angle) &&
                 robot->orientation() < (final_angle + threshold_angle))
             {
-                LOG(DEBUG) << "Pivot angle reached threshold";
+                LOG(DBUG) << "Pivot angle reached threshold";
                 break;
             }
 

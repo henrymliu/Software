@@ -98,7 +98,7 @@ void FreeKickPlay::getNextTactics(TacticCoroutine::push_type &yield)
     // Wait for a robot to be assigned to align to take the kick
     while (!align_to_ball_tactic->getAssignedRobot())
     {
-        LOG(DEBUG) << "Nothing assigned to align to ball yet";
+        LOG(DBUG) << "Nothing assigned to align to ball yet";
         updateAlignToBallTactic(align_to_ball_tactic);
         updateCherryPickTactics({cherry_pick_tactic_pos_y, cherry_pick_tactic_neg_y});
         updatePassGenerator(pass_generator);
@@ -108,7 +108,7 @@ void FreeKickPlay::getNextTactics(TacticCoroutine::push_type &yield)
     }
 
     // Put the robot in roughly the right position to perform the kick
-    LOG(DEBUG) << "Aligning to ball";
+    LOG(DBUG) << "Aligning to ball";
     do
     {
         updateAlignToBallTactic(align_to_ball_tactic);
@@ -118,7 +118,7 @@ void FreeKickPlay::getNextTactics(TacticCoroutine::push_type &yield)
                crease_defender_left, crease_defender_right});
     } while (!align_to_ball_tactic->done());
 
-    LOG(DEBUG) << "Finished aligning to ball";
+    LOG(DBUG) << "Finished aligning to ball";
 
     // Have a robot keep trying to take a shot
     auto shoot_tactic = std::make_shared<ShootGoalTactic>(
@@ -135,8 +135,8 @@ void FreeKickPlay::getNextTactics(TacticCoroutine::push_type &yield)
         updateCherryPickTactics({cherry_pick_tactic_pos_y, cherry_pick_tactic_neg_y});
         updatePassGenerator(pass_generator);
 
-        LOG(DEBUG) << "Best pass so far is: " << best_pass_and_score_so_far.pass;
-        LOG(DEBUG) << "      with score of: " << best_pass_and_score_so_far.rating;
+        LOG(DBUG) << "Best pass so far is: " << best_pass_and_score_so_far.pass;
+        LOG(DBUG) << "      with score of: " << best_pass_and_score_so_far.rating;
 
         yield({shoot_tactic, cherry_pick_tactic_neg_y, cherry_pick_tactic_pos_y,
                crease_defender_left, crease_defender_right});
@@ -169,7 +169,7 @@ void FreeKickPlay::getNextTactics(TacticCoroutine::push_type &yield)
                              1.0 - ABS_MIN_PASS_QUALITY);
         }
 
-        LOG(DEBUG) << "LOOP END";
+        LOG(DBUG) << "LOOP END";
     } while (!ready_to_pass || shoot_tactic->hasShotAvailable());
 
     // Destruct the PassGenerator and CherryPick tactics (which contain a PassGenerator
@@ -185,8 +185,8 @@ void FreeKickPlay::getNextTactics(TacticCoroutine::push_type &yield)
         // Commit to a pass
         Pass pass = best_pass_and_score_so_far.pass;
 
-        LOG(DEBUG) << "Committing to pass: " << best_pass_and_score_so_far.pass;
-        LOG(DEBUG) << "Score of pass we committed to: "
+        LOG(DBUG) << "Committing to pass: " << best_pass_and_score_so_far.pass;
+        LOG(DBUG) << "Score of pass we committed to: "
                    << best_pass_and_score_so_far.rating;
 
         // Perform the pass and wait until the receiver is finished
@@ -208,10 +208,10 @@ void FreeKickPlay::getNextTactics(TacticCoroutine::push_type &yield)
     }
     else
     {
-        LOG(DEBUG) << "Took shot";
+        LOG(DBUG) << "Took shot";
     }
 
-    LOG(DEBUG) << "Finished";
+    LOG(DBUG) << "Finished";
 }
 
 void FreeKickPlay::updateCherryPickTactics(

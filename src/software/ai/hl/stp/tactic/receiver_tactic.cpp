@@ -90,7 +90,7 @@ void ReceiverTactic::calculateNextIntent(IntentCoroutine::push_type& yield)
     std::optional<std::pair<Point, Angle>> best_shot = findFeasibleShot();
     if (best_shot)
     {
-        LOG(DEBUG) << "Taking one-touch shot";
+        LOG(DBUG) << "Taking one-touch shot";
         auto [best_shot_target, _] = *best_shot;
 
         // The angle between the ball velocity and a vector from the ball to the robot
@@ -119,7 +119,7 @@ void ReceiverTactic::calculateNextIntent(IntentCoroutine::push_type& yield)
     // possible
     else
     {
-        LOG(DEBUG) << "Receiving and dribbling";
+        LOG(DBUG) << "Receiving and dribbling";
         while ((ball.position() - robot->position()).len() >
                DIST_TO_FRONT_OF_ROBOT_METERS + 2 * BALL_MAX_RADIUS_METERS)
         {
@@ -133,7 +133,7 @@ void ReceiverTactic::calculateNextIntent(IntentCoroutine::push_type& yield)
                 *robot, ball_receive_pos, ball_receive_orientation, 0, true, NONE));
         }
     }
-    LOG(DEBUG) << "Finished";
+    LOG(DBUG) << "Finished";
 }
 
 Angle ReceiverTactic::getOneTimeShotDirection(const Ray& shot, const Ball& ball)
