@@ -1,5 +1,4 @@
 #pragma once
-#include <bits/stdc++.h>
 #include <unistd.h>
 
 #include "software/ai/navigator/path_planning_navigator/path_planner/path_planner.h"

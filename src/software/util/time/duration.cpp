@@ -2,6 +2,7 @@
  * Implementation for the Duration class
  */
 
+#include <cmath>
 #include "software/util/time/duration.h"
 
 #include "shared/constants.h"

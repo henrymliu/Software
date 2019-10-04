@@ -1,6 +1,6 @@
 #include "software/gui/widgets/robot_status_table.h"
 
-#include <math.h>
+#include <cmath>
 
 RobotStatusTable::RobotStatusTable(QWidget* parent, Duration message_expiry_age)
     : QTableWidget(parent), message_expiry_age(message_expiry_age), age_update_timer(this)
