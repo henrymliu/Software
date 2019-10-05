@@ -62,16 +62,17 @@ new_git_repository(
 )
 
 # Qt bazel rules from https://github.com/justbuchanan/bazel_rules_qt
-git_repository(
+new_local_repository(
     name = "bazel_rules_qt",
-    commit = "3f949bf4b5dcae2941ba3b71b3ddeb5d39637907",
-    remote = "https://github.com/justbuchanan/bazel_rules_qt.git",
+    build_file = "@//external/qt:BUILD",
+    path = "external/qt"
 )
 
-# Right now qt5 is installed on the system using the setup_software.sh script
-# We assume we can find the headers in the "standard" path used in this rule
-new_local_repository(
+http_archive(
     name = "qt",
-    build_file = "@bazel_rules_qt//:qt.BUILD",
-    path = "/usr/include/x86_64-linux-gnu/qt5/",
+    sha256 = "110cd08cdacab26274bf2519d3508046616c0b638f0d2f5e00bc8bad87469eab",
+    strip_prefix = "qtbase-everywhere-src-5.13.1",
+    url = "http://mirror.csclub.uwaterloo.ca/qtproject/archive/qt/5.13/5.13.1/submodules/qtbase-everywhere-src-5.13.1.tar.xz",
+    build_file = "@bazel_rules_qt//:BUILD",
 )
+
