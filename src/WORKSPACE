@@ -95,13 +95,29 @@ http_archive(
 )
 
 http_archive(
-    name = "arm_developer_gcc",
+    name = "arm_developer_gcc_macos",
+    build_file = "@//external:arm_gcc.BUILD",
+    sha256 = "1249f860d4155d9c3ba8f30c19e7a88c5047923cea17e0d08e633f12408f01f0",
+    strip_prefix = "gcc-arm-none-eabi-9-2019-q4-major",
+    urls = [
+        "https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/9-2019q4/RC2.1/gcc-arm-none-eabi-9-2019-q4-major-mac.tar.bz2",
+    ],
+)
+
+http_archive(
+    name = "arm_developer_gcc_linux",
     build_file = "@//external:arm_gcc.BUILD",
     sha256 = "b50b02b0a16e5aad8620e9d7c31110ef285c1dde28980b1a9448b764d77d8f92",
     strip_prefix = "gcc-arm-none-eabi-8-2019-q3-update",
     urls = [
-        "https://developer.arm.com/-/media/Files/downloads/gnu-rm/8-2019q3/RC1.1/gcc-arm-none-eabi-8-2019-q3-update-linux.tar.bz2",
+        "https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-2019q3/RC1.1/gcc-arm-none-eabi-8-2019-q3-update-linux.tar.bz2",
     ],
+)
+
+new_local_repository(
+    name = "arm_developer_gcc",
+    build_file = "@//external:arm_select.BUILD",
+    path = "external/arm_developer_gcc"
 )
 
 # We use our own fork of Box2D as we have made a few small modifications
